@@ -1,0 +1,30 @@
+{
+  "clip": "elastico_ronaldinho_2006",
+  "title": "Ronaldinho — Elastico (2006)",
+  "duration": 26,
+  "cv_context": {
+    "fusion_label": "elastico",
+    "confidence": 0.71,
+    "gold": "elastico",
+    "sources": [
+      {"name": "player-prior", "vote": "elastico", "weight": 3},
+      {"name": "vlm-qwen-max", "vote": "elastico", "weight": 1},
+      {"name": "vlm-qwen-plus", "vote": "step-over", "weight": 1}
+    ]
+  },
+  "transcript": [
+    {"t": 0.5, "text": "Ronaldinho receives it wide on the left, one defender in front of him."},
+    {"t": 4.5, "text": "He shapes to go inside onto his stronger foot..."},
+    {"t": 8.0, "text": "Oh! The elastico! Outside to inside in one motion — sensational!"},
+    {"t": 12.5, "text": "He's past two of them now, driving toward the edge of the box."},
+    {"t": 17.0, "text": "Ronaldinho shapes to strike... and gets the effort away!"},
+    {"t": 21.5, "text": "The crowd rises — that flip-flap was pure Ronaldinho, nobody else does it like that."}
+  ],
+  "events": [
+    {"t": 1.0, "type": "reception", "title": "Isolated 1v1 wide", "analysis": "Ball to the left touchline isolates Ronaldinho against a single defender. Ideal elastico territory: the move needs exactly one committed opponent, not two.", "players": ["Ronaldinho"], "rating": 8.0, "speculative": false},
+    {"t": 5.0, "type": "setup", "title": "Inside-shaping feint", "analysis": "He opens his hips as if cutting inside. This is the sell — the defender shifts weight to block the inside lane, which is precisely what the elastico punishes.", "players": ["Ronaldinho"], "rating": 8.5, "speculative": false},
+    {"t": 8.5, "type": "dribble", "title": "Elastico — the snap", "analysis": "One continuous touch: outside of the boot pushes the ball across, then the same foot whips it back inside — all in a single whip motion. Both CV sources and the player prior converge here; this is the highest-confidence event of the clip.", "players": ["Ronaldinho"], "rating": 10.0, "speculative": false},
+    {"t": 13.0, "type": "burst", "title": "Beating the second man", "analysis": "The recovering defender arrives off-balance from the snap. Ronaldinho uses his forearm and hip to shield — legal, and brutally effective at full speed.", "players": ["Ronaldinho"], "rating": 9.0, "speculative": false},
+    {"t": 17.5, "type": "finish", "title": "Strike on the run", "analysis": "Shot taken while decelerating from the dribble. Coaching note: the elastico only becomes a goal threat because the snap ends with the ball on his shooting foot, not under his body.", "players": ["Ronaldinho"], "rating": 9.2, "speculative": false}
+  ]
+}

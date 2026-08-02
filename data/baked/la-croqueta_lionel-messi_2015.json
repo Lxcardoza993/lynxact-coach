@@ -1,0 +1,30 @@
+{
+  "clip": "la-croqueta_lionel-messi_2015",
+  "title": "Lionel Messi — La Croqueta (2015)",
+  "duration": 21,
+  "cv_context": {
+    "fusion_label": "step-over",
+    "confidence": 0.48,
+    "gold": "la-croqueta",
+    "sources": [
+      {"name": "player-prior", "vote": "body-feint", "weight": 3},
+      {"name": "vlm-qwen-max", "vote": "step-over", "weight": 1},
+      {"name": "vlm-qwen-plus", "vote": "la-croqueta", "weight": 1}
+    ]
+  },
+  "transcript": [
+    {"t": 0.5, "text": "Messi picks it up in a crowded midfield, two defenders converging fast."},
+    {"t": 4.0, "text": "No way through there, surely — the gap is closing..."},
+    {"t": 7.5, "text": "Through the eye of a needle! La croqueta — between both of them!"},
+    {"t": 11.0, "text": "Messi is free, bearing down on goal now."},
+    {"t": 15.0, "text": "He slots it home — made to look effortless, as only Messi can."},
+    {"t": 18.5, "text": "Watch it again: two touches, two directions, and the defenders tackle each other's shadows."}
+  ],
+  "events": [
+    {"t": 1.0, "type": "reception", "title": "Receiving in the trap", "analysis": "Messi takes the ball with two defenders converging from opposite angles. Most players play safe here — note he takes a touch toward the trap, not away from it.", "players": ["Lionel Messi"], "rating": 8.5, "speculative": false},
+    {"t": 4.5, "type": "setup", "title": "Baiting the pincer", "analysis": "He waits for both defenders to commit to the collision course. The later he waits, the wider the corridor between them opens. This patience is the actual skill — the croqueta is just the exit.", "players": ["Lionel Messi"], "rating": 9.0, "speculative": false},
+    {"t": 8.0, "type": "dribble", "title": "La croqueta through the gap", "analysis": "Rapid inside-to-inside transfer between the feet, slipping the ball through the closing gap. Honesty flag: the fusion pipeline called this a step-over (conf 0.48) and the player prior went body-feint — the sources disagree, so treat the label with caution.", "players": ["Lionel Messi"], "rating": 9.7, "speculative": true},
+    {"t": 11.5, "type": "burst", "title": "Into open grass", "analysis": "The two defenders are left tackling the space he has already vacated. Messi's first step after the move is forward, not a touch to control — no momentum lost.", "players": ["Lionel Messi"], "rating": 9.3, "speculative": false},
+    {"t": 15.5, "type": "finish", "title": "Composed finish", "analysis": "Side-foot placement rather than power. Coaching note: the move did not just beat two men — it froze the goalkeeper's near post, which is why the far corner opens up.", "players": ["Lionel Messi"], "rating": 9.5, "speculative": false}
+  ]
+}

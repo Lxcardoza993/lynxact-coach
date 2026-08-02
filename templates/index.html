@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LynxAct Coach — Live Tactical Analysis</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --line:#30363d; --fg:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --gold:#f2cc60; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,"Segoe UI",Roboto,"Noto Sans SC",sans-serif; }
+  header { padding:28px 32px 12px; }
+  h1 { margin:0; font-size:26px; letter-spacing:.5px; }
+  h1 .x { color:var(--acc); }
+  .sub { color:var(--dim); margin-top:6px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; padding:20px 32px 40px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; text-decoration:none; color:var(--fg); transition:border-color .15s; display:block; }
+  .card:hover { border-color:var(--acc); }
+  .card.baked { border-color:var(--gold); }
+  .t { font-weight:600; }
+  .m { color:var(--dim); font-size:13px; margin-top:6px; }
+  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:99px; margin-top:10px; border:1px solid var(--line); color:var(--dim); }
+  .baked .badge { color:var(--gold); border-color:var(--gold); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Lynx<span class="x">Act</span> Coach</h1>
+  <div class="sub">Live tactical analysis — commentary transcription × CV fusion annotations × Claude event cards · 实时战术分析</div>
+</header>
+<div class="grid">
+{% for c in clips %}
+  <a class="card {% if c.baked %}baked{% endif %}" href="/coach/{{ c.id }}">
+    <div class="t">{{ c.title }}</div>
+    <div class="m">{{ c.id }}.mp4{% if c.duration %} · {{ c.duration }}s{% endif %}</div>
+    {% if c.baked %}<span class="badge">▶ DEMO READY</span>{% else %}<span class="badge">clip</span>{% endif %}
+  </a>
+{% endfor %}
+</div>
+</body>
+</html>

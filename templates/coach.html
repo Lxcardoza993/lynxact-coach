@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ clip.title }} — LynxAct Coach</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --line:#30363d; --fg:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --gold:#f2cc60; --ok:#3fb950; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,"Segoe UI",Roboto,"Noto Sans SC",sans-serif; }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  h1 { margin:0; font-size:19px; }
+  .tag { font-size:12px; padding:2px 10px; border-radius:99px; border:1px solid var(--line); color:var(--dim); }
+  .tag.gold { color:var(--gold); border-color:var(--gold); }
+  .tag.ok { color:var(--ok); border-color:var(--ok); }
+  main { display:grid; grid-template-columns:3fr 2fr; gap:14px; padding:14px 20px; }
+  video { width:100%; background:#000; border-radius:10px; border:1px solid var(--line); }
+  .pane { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; height:52vh; overflow-y:auto; }
+  .pane h2 { margin:0 0 8px; font-size:13px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
+  .tr { padding:5px 0; border-bottom:1px dashed #21262d; font-size:14px; }
+  .tr .ts { color:var(--acc); font-variant-numeric:tabular-nums; margin-right:8px; font-size:12px; }
+  #cards { grid-column:1 / -1; display:flex; flex-direction:column; gap:12px; height:auto; max-height:none; min-height:120px; }
+  .ecard { border:1px solid var(--line); border-left:3px solid var(--acc); border-radius:8px; padding:10px 14px; background:#0d1420; }
+  .ecard .head { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .ecard .type { font-size:11px; color:var(--bg); background:var(--acc); border-radius:4px; padding:1px 7px; font-weight:700; text-transform:uppercase; }
+  .ecard .title { font-weight:600; }
+  .ecard .ts { color:var(--acc); font-size:12px; font-variant-numeric:tabular-nums; }
+  .ecard .rating { margin-left:auto; color:var(--gold); font-weight:700; }
+  .ecard .an { color:#c9d1d9; margin-top:6px; font-size:14px; }
+  .ecard .players { margin-top:6px; font-size:12px; color:var(--dim); }
+  .ecard .spec { margin-top:6px; font-size:12px; color:var(--gold); }
+  .cv { font-size:12px; color:var(--dim); margin-top:4px; }
+  .cv b { color:var(--fg); }
+  #status { margin-left:auto; font-size:12px; color:var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1>{{ clip.title }}</h1>
+  <span class="tag gold">{% if clip.baked %}REPLAY · baked fallback{% else %}CLIP{% endif %}</span>
+  {% if clip.cv_context %}
+  <span class="tag ok">CV fusion: {{ clip.cv_context.fusion_label }} ({{ '%.0f'|format(clip.cv_context.confidence * 100) }}%)</span>
+  {% endif %}
+  <span id="status">idle — press play</span>
+</header>
+<main>
+  <div>
+    <video id="vid" controls preload="metadata" src="/video/{{ clip.file }}"></video>
+    {% if clip.cv_context %}
+    <div class="cv">Fusion votes:
+      {% for s in clip.cv_context.sources %}<b>{{ s.name }}</b>→{{ s.vote }}(w{{ s.weight }}){% if not loop.last %} · {% endif %}{% endfor %}
+      · gold=<b>{{ clip.cv_context.gold }}</b>
+    </div>
+    {% endif %}
+  </div>
+  <div class="pane"><h2>Live commentary</h2><div id="transcript"></div></div>
+  <div class="pane" id="cards"><h2>Tactical event cards</h2></div>
+</main>
+<script>
+const clipId = {{ clip.id | tojson }};
+const statusEl = document.getElementById('status');
+const trEl = document.getElementById('transcript');
+const cardsEl = document.getElementById('cards');
+let es = null;
+function fmt(t){ return t.toFixed(1) + 's'; }
+function start(){
+  if (es) return;
+  es = new EventSource('/api/stream/' + clipId);
+  statusEl.textContent = 'streaming…';
+  es.addEventListener('transcript', e => {
+    const d = JSON.parse(e.data);
+    const div = document.createElement('div');
+    div.className = 'tr';
+    div.innerHTML = '<span class="ts">' + fmt(d.t) + '</span>' + d.text;
+    trEl.appendChild(div);
+    trEl.parentElement.scrollTop = trEl.parentElement.scrollHeight;
+  });
+  es.addEventListener('card', e => {
+    const d = JSON.parse(e.data);
+    const div = document.createElement('div');
+    div.className = 'ecard';
+    div.innerHTML =
+      '<div class="head"><span class="type">' + d.type + '</span>' +
+      '<span class="ts">' + fmt(d.t) + '</span>' +
+      '<span class="title"></span>' +
+      '<span class="rating">★ ' + d.rating + '</span></div>' +
+      '<div class="an"></div>' +
+      (d.players && d.players.length ? '<div class="players">👤 ' + d.players.join(' · ') + '</div>' : '') +
+      (d.speculative ? '<div class="spec">⚠ speculative — not grounded in CV/transcript</div>' : '');
+    div.querySelector('.title').textContent = d.title;
+    div.querySelector('.an').textContent = d.analysis;
+    cardsEl.appendChild(div);
+    div.scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+  es.addEventListener('done', () => { statusEl.textContent = 'done'; es.close(); es = null; });
+  es.onerror = () => { statusEl.textContent = 'stream closed'; if (es) { es.close(); es = null; } };
+}
+document.getElementById('vid').addEventListener('play', start, {once:true});
+</script>
+</body>
+</html>

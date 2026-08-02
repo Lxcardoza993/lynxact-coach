@@ -1,0 +1,32 @@
+{
+  "clip": "body-feint_diego-maradona_1986",
+  "title": "Diego Maradona — Body Feint (1986)",
+  "duration": 30,
+  "cv_context": {
+    "fusion_label": "body-feint",
+    "confidence": 0.62,
+    "gold": "body-feint",
+    "sources": [
+      {"name": "player-prior", "vote": "body-feint", "weight": 3},
+      {"name": "vlm-qwen-max", "vote": "cruyff-turn", "weight": 1},
+      {"name": "vlm-qwen-plus", "vote": "body-feint", "weight": 1}
+    ]
+  },
+  "transcript": [
+    {"t": 0.5, "text": "Maradona picks it up on the left channel, two defenders closing in."},
+    {"t": 5.0, "text": "He slows the play down, shoulders dropped, waiting for the challenge."},
+    {"t": 9.5, "text": "Oh, a drop of the shoulder — the defender is completely wrong-footed!"},
+    {"t": 14.0, "text": "Maradona bursts into the space, only one man between him and the goal."},
+    {"t": 19.0, "text": "Another feint inside the box — the second defender commits and loses."},
+    {"t": 23.5, "text": "He gets the shot away! Vintage Maradona, pure balance and deception."},
+    {"t": 27.0, "text": "The crowd is on its feet. That is the body feint, executed to perfection."}
+  ],
+  "events": [
+    {"t": 1.0, "type": "reception", "title": "Receiving under pressure", "analysis": "Maradona takes the ball on the half-turn in the left channel. Body shape already side-on, giving him the option to go either way — the setup every feint needs.", "players": ["Diego Maradona"], "rating": 8.0, "speculative": false},
+    {"t": 5.5, "type": "setup", "title": "Tempo manipulation", "analysis": "He decelerates deliberately. Slowing the defender's momentum is the real weapon here — a static defender is easier to unbalance than a moving one.", "players": ["Diego Maradona"], "rating": 8.5, "speculative": false},
+    {"t": 10.0, "type": "dribble", "title": "Body feint — shoulder drop", "analysis": "The signature move the CV pipeline flagged: full shoulder and hip dip left, ball goes right. No step-overs, no touch at all — pure body deception. Defender's weight is entirely on the wrong leg.", "players": ["Diego Maradona"], "rating": 9.8, "speculative": false},
+    {"t": 14.5, "type": "burst", "title": "Explosive acceleration into space", "analysis": "The feint only works because of what follows: first three steps at full sprint before the defender can re-set. Separation of two metres created in under a second.", "players": ["Diego Maradona"], "rating": 9.2, "speculative": false},
+    {"t": 19.5, "type": "dribble", "title": "Second feint in the box", "analysis": "Repeat of the same pattern inside the penalty area — defender now over-commits trying to block the shot. CV confidence dips here (occlusion), so the second-vote disagreement between the VLMs is expected.", "players": ["Diego Maradona"], "rating": 9.5, "speculative": true},
+    {"t": 24.0, "type": "finish", "title": "Shot release", "analysis": "Low centre of gravity lets him strike while still moving away from goal. Coaching note: the feint created the angle; the balance finished the job.", "players": ["Diego Maradona"], "rating": 9.0, "speculative": false}
+  ]
+}
