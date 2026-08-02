@@ -41,8 +41,8 @@ def replay_events(clip_id):
     yield sse("done", {"clip": data["clip"]})
 
 
-def sse_stream(clip_id):
-    mode = os.environ.get("COACH_MODE", "replay")
+def sse_stream(clip_id, mode=None):
+    mode = mode or os.environ.get("COACH_MODE", "replay")
     if mode == "live":
         from . import claude
         yield from claude.live_events(clip_id)

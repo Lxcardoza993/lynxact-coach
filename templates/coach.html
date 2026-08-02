@@ -42,6 +42,7 @@
   <span class="tag ok">CV fusion: {{ clip.cv_context.fusion_label }} ({{ '%.0f'|format(clip.cv_context.confidence * 100) }}%)</span>
   {% endif %}
   <span id="status">idle — press play</span>
+  <a class="tag" href="?mode=live" style="text-decoration:none;cursor:pointer">▶ TRY LIVE (model-generated)</a>
 </header>
 <main>
   <div>
@@ -58,6 +59,7 @@
 </main>
 <script>
 const clipId = {{ clip.id | tojson }};
+const urlMode = new URLSearchParams(location.search).get('mode');
 const statusEl = document.getElementById('status');
 const trEl = document.getElementById('transcript');
 const cardsEl = document.getElementById('cards');
@@ -65,8 +67,8 @@ let es = null;
 function fmt(t){ return t.toFixed(1) + 's'; }
 function start(){
   if (es) return;
-  es = new EventSource('/api/stream/' + clipId);
-  statusEl.textContent = 'streaming…';
+  es = new EventSource('/api/stream/' + clipId + (urlMode ? '?mode=' + urlMode : ''));
+  statusEl.textContent = urlMode === 'live' ? 'LIVE streaming (model-generated)…' : 'streaming…';
   es.addEventListener('transcript', e => {
     const d = JSON.parse(e.data);
     const div = document.createElement('div');

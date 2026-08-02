@@ -1,7 +1,11 @@
 """LynxAct Coach — Flask entry. http://127.0.0.1:6901"""
 import os
 
-from flask import Flask, Response, abort, jsonify, render_template
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from flask import Flask, Response, abort, jsonify, render_template, request
 
 from coach.clips import get_clip, list_clips
 from coach.stream import sse_stream
@@ -32,8 +36,10 @@ def video(fname):
 def api_stream(clip_id):
     if not get_clip(clip_id):
         abort(404)
+    # ?mode=live|replay 可覆盖环境变量,演示时一个服务两种模式
+    mode = request.args.get("mode") or os.environ.get("COACH_MODE", "replay")
     return Response(
-        sse_stream(clip_id),
+        sse_stream(clip_id, mode),
         mimetype="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
