@@ -20,7 +20,13 @@
   .tr { padding:5px 0; border-bottom:1px dashed #21262d; font-size:14px; }
   .tr .ts { color:var(--acc); font-variant-numeric:tabular-nums; margin-right:8px; font-size:12px; }
   #cards { grid-column:1 / -1; display:flex; flex-direction:column; gap:12px; height:auto; max-height:none; min-height:120px; }
-  .ecard { border:1px solid var(--line); border-left:3px solid var(--acc); border-radius:8px; padding:10px 14px; background:#0d1420; }
+  .ecard { border:1px solid var(--line); border-left:3px solid var(--acc); border-radius:8px; padding:10px 14px; background:#0d1420; animation:cardIn .45s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes cardIn { from { opacity:0; transform:translateY(14px) scale(.98); } to { opacity:1; transform:none; } }
+  .ecard.hot { border-left-color:var(--gold); box-shadow:0 0 0 1px rgba(242,204,96,.25), 0 4px 18px rgba(242,204,96,.08); }
+  .ecard.hot .type { background:var(--gold); }
+  .tr { animation:trIn .3s ease both; }
+  @keyframes trIn { from { opacity:0; transform:translateX(8px); } to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce) { .ecard, .tr { animation:none; } }
   .ecard .head { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
   .ecard .type { font-size:11px; color:var(--bg); background:var(--acc); border-radius:4px; padding:1px 7px; font-weight:700; text-transform:uppercase; }
   .ecard .title { font-weight:600; }
@@ -44,6 +50,7 @@
   <span id="status">idle — press play</span>
   <a class="tag" href="?mode=live" style="text-decoration:none;cursor:pointer">▶ TRY LIVE (model-generated)</a>
   <button id="reportBtn" disabled style="background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">📋 Full report</button>
+  <button id="exportBtn" disabled style="background:var(--panel);color:var(--gold);border:1px solid var(--gold);border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">🖼 Export PNG</button>
 </header>
 <main>
   <div>
@@ -64,12 +71,22 @@
 </main>
 <script>
 const clipId = {{ clip.id | tojson }};
+const clipTitle = {{ clip.title | tojson }};
 const urlMode = new URLSearchParams(location.search).get('mode');
 const statusEl = document.getElementById('status');
 const trEl = document.getElementById('transcript');
 const cardsEl = document.getElementById('cards');
+const cardsData = [];
 let es = null;
 function fmt(t){ return t.toFixed(1) + 's'; }
+function setDoneState(){
+  statusEl.textContent = 'done';
+  es.close(); es = null;
+  for (const id of ['reportBtn','exportBtn']) {
+    const btn = document.getElementById(id);
+    btn.disabled = false; btn.style.opacity = 1;
+  }
+}
 function start(){
   if (es) return;
   es = new EventSource('/api/stream/' + clipId + (urlMode ? '?mode=' + urlMode : ''));
@@ -84,8 +101,9 @@ function start(){
   });
   es.addEventListener('card', e => {
     const d = JSON.parse(e.data);
+    cardsData.push(d);
     const div = document.createElement('div');
-    div.className = 'ecard';
+    div.className = 'ecard' + ((d.rating || 0) >= 9 ? ' hot' : '');
     div.innerHTML =
       '<div class="head"><span class="type">' + d.type + '</span>' +
       '<span class="ts">' + fmt(d.t) + '</span>' +
@@ -99,20 +117,21 @@ function start(){
     cardsEl.appendChild(div);
     div.scrollIntoView({behavior:'smooth', block:'nearest'});
   });
-  es.addEventListener('done', () => {
-    statusEl.textContent = 'done';
-    es.close(); es = null;
-    const btn = document.getElementById('reportBtn');
-    btn.disabled = false; btn.style.opacity = 1;
-  });
+  es.addEventListener('done', setDoneState);
   es.addEventListener('error', e => {
     let msg = 'stream error';
     try { msg = JSON.parse(e.data).msg || msg; } catch(_) {}
     statusEl.textContent = '⚠ ' + msg;
   });
-  es.onerror = () => { statusEl.textContent = 'stream closed'; if (es) { es.close(); es = null; } };
+  es.onerror = () => {
+    statusEl.textContent = '⚠ stream closed — press play to retry';
+    if (es) { es.close(); es = null; }
+  };
 }
-document.getElementById('vid').addEventListener('play', start, {once:true});
+document.getElementById('vid').addEventListener('play', start);
+document.getElementById('vid').addEventListener('error', () => {
+  statusEl.textContent = '⚠ video failed to load — check clip file';
+});
 function mdToHtml(md){
   const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   return esc(md).split('\n').map(line => {
@@ -126,13 +145,80 @@ function mdToHtml(md){
 document.getElementById('reportBtn').addEventListener('click', async () => {
   const pane = document.getElementById('reportPane');
   pane.style.display = 'block';
-  document.getElementById('reportBody').textContent = 'generating…';
-  const r = await fetch('/api/report/' + clipId + (urlMode ? '?mode=' + urlMode : ''));
-  const d = await r.json();
-  if (d.error) { document.getElementById('reportBody').textContent = d.error; return; }
-  document.getElementById('reportBy').textContent = '· by ' + d.generated_by;
-  document.getElementById('reportBody').innerHTML = mdToHtml(d.markdown);
-  pane.scrollIntoView({behavior:'smooth'});
+  const body = document.getElementById('reportBody');
+  body.textContent = 'generating…';
+  try {
+    const r = await fetch('/api/report/' + clipId + (urlMode ? '?mode=' + urlMode : ''));
+    const d = await r.json();
+    if (!r.ok || d.error) { body.textContent = '⚠ ' + (d.error || ('report failed: HTTP ' + r.status)); return; }
+    document.getElementById('reportBy').textContent = '· by ' + d.generated_by;
+    body.innerHTML = mdToHtml(d.markdown);
+    pane.scrollIntoView({behavior:'smooth'});
+  } catch (err) {
+    body.textContent = '⚠ report request failed: ' + err.message;
+  }
+});
+// ---- Export top moments as a shareable PNG (client-side canvas, no deps) ----
+function wrapText(ctx, text, x, y, maxW, lineH, maxLines){
+  const words = String(text).split(/\s+/);
+  let line = '', lines = 0;
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, y); y += lineH; lines++;
+      line = w;
+      if (lines >= maxLines - 1) { line = line + ' …'; break; }
+    } else line = test;
+  }
+  ctx.fillText(line, x, y);
+  return y + lineH;
+}
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if (!cardsData.length) { statusEl.textContent = '⚠ no cards to export'; return; }
+  const top = [...cardsData].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3);
+  const W = 1200, cardH = 150, H = 300 + top.length * cardH + 90;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#30363d'; ctx.strokeRect(20, 20, W - 40, H - 40);
+  // header
+  ctx.fillStyle = '#e6edf3'; ctx.font = '700 44px sans-serif';
+  ctx.fillText('Lynx', 60, 90);
+  ctx.fillStyle = '#58a6ff'; ctx.fillText('Act', 60 + ctx.measureText('Lynx').width, 90);
+  ctx.fillStyle = '#e6edf3'; ctx.fillText(' Coach', 60 + ctx.measureText('LynxAct').width, 90);
+  ctx.fillStyle = '#8b949e'; ctx.font = '26px sans-serif';
+  ctx.fillText(clipTitle + ' — Top Tactical Moments', 60, 140);
+  ctx.fillStyle = '#f2cc60'; ctx.font = '22px sans-serif';
+  ctx.fillText(urlMode === 'live' ? 'LIVE model-generated analysis' : 'tactical event analysis', 60, 178);
+  // cards
+  let y = 230;
+  for (const c of top) {
+    ctx.fillStyle = '#161b22';
+    ctx.fillRect(60, y, W - 120, cardH - 24);
+    ctx.fillStyle = '#58a6ff'; ctx.fillRect(60, y, 6, cardH - 24);
+    ctx.fillStyle = '#58a6ff'; ctx.font = '700 22px sans-serif';
+    ctx.fillText(String(c.type || '').toUpperCase(), 90, y + 40);
+    ctx.fillStyle = '#8b949e'; ctx.font = '22px sans-serif';
+    ctx.fillText((c.t || 0).toFixed(1) + 's', 260, y + 40);
+    ctx.fillStyle = '#f2cc60'; ctx.font = '700 24px sans-serif';
+    ctx.fillText('★ ' + (c.rating || '-'), W - 220, y + 40);
+    ctx.fillStyle = '#e6edf3'; ctx.font = '700 28px sans-serif';
+    ctx.fillText(String(c.title || '').slice(0, 60), 90, y + 78);
+    ctx.fillStyle = '#c9d1d9'; ctx.font = '22px sans-serif';
+    wrapText(ctx, c.analysis || '', 90, y + 112, W - 220, 26, 2);
+    y += cardH;
+  }
+  ctx.fillStyle = '#8b949e'; ctx.font = '20px sans-serif';
+  ctx.fillText('Generated by LynxAct Coach — live tactical analysis · commentary × CV fusion × LLM', 60, H - 45);
+  cv.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = clipId + '-top-moments.png';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    statusEl.textContent = 'PNG exported';
+  }, 'image/png');
 });
 </script>
 </body>

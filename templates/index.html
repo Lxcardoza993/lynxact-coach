@@ -27,6 +27,9 @@
   <h1>Lynx<span class="x">Act</span> Coach</h1>
   <div class="sub">Live tactical analysis — commentary transcription × CV fusion annotations × Claude event cards · 实时战术分析</div>
 </header>
+{% if err %}
+<div style="margin:0 32px 10px;padding:10px 16px;background:#3d1d1d;border:1px solid #f85149;border-radius:8px;color:#ffa198">⚠ {{ err }}</div>
+{% endif %}
 <form action="/api/upload" method="post" enctype="multipart/form-data"
       style="margin:0 32px 6px;padding:12px 16px;background:var(--panel);border:1px dashed var(--line);border-radius:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
   <b>Analyze your own clip</b>
@@ -38,7 +41,7 @@
 {% for c in clips %}
   <a class="card {% if c.baked %}baked{% endif %}" href="/coach/{{ c.id }}">
     <div class="t">{{ c.title }}</div>
-    <div class="m">{{ c.id }}.mp4{% if c.duration %} · {{ c.duration }}s{% endif %}</div>
+    <div class="m">{{ c.id }}.mp4{% if c.duration %} · {{ c.duration | round(1) }}s{% endif %}</div>
     {% if c.baked %}<span class="badge">▶ DEMO READY</span>{% else %}<span class="badge">clip</span>{% endif %}
   </a>
 {% endfor %}

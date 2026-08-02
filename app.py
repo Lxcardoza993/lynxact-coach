@@ -17,11 +17,33 @@ from coach.stream import sse_stream
 from coach.video import range_stream
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024  # 300MB 上传上限
+
+
+def _err_page(code, msg):
+    return (
+        "<!doctype html><html><head><meta charset='utf-8'><title>LynxAct Coach</title>"
+        "<style>body{background:#0d1117;color:#e6edf3;font:15px sans-serif;display:flex;"
+        "min-height:100vh;align-items:center;justify-content:center;margin:0}"
+        "a{color:#58a6ff}</style></head><body><div style='text-align:center'>"
+        f"<h1 style='font-size:64px;margin:0'>{code}</h1><p>{msg}</p>"
+        "<p><a href='/'>← back to clips</a></p></div></body></html>"
+    ), code
+
+
+@app.errorhandler(404)
+def not_found(_):
+    return _err_page(404, "clip or page not found")
+
+
+@app.errorhandler(413)
+def too_large(_):
+    return _err_page(413, "file too large — 300MB max")
 
 
 @app.route("/")
 def index():
-    return render_template("index.html", clips=list_clips())
+    return render_template("index.html", clips=list_clips(), err=request.args.get("err"))
 
 
 @app.route("/coach/<clip_id>")
@@ -53,7 +75,9 @@ def api_report(clip_id):
 def api_upload():
     f = request.files.get("file")
     if not f or not f.filename:
-        return jsonify(error="no file"), 400
+        return redirect("/?err=no+file+selected")
+    if not f.filename.lower().endswith(".mp4"):
+        return redirect("/?err=only+mp4+files+supported")
     os.makedirs(TMP_DIR, exist_ok=True)
     tmp_path = os.path.join(TMP_DIR, "up-" + uuid.uuid4().hex[:8] + ".mp4")
     f.save(tmp_path)
