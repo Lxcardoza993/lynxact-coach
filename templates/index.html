@@ -27,6 +27,13 @@
   <h1>Lynx<span class="x">Act</span> Coach</h1>
   <div class="sub">Live tactical analysis — commentary transcription × CV fusion annotations × Claude event cards · 实时战术分析</div>
 </header>
+<form action="/api/upload" method="post" enctype="multipart/form-data"
+      style="margin:0 32px 6px;padding:12px 16px;background:var(--panel);border:1px dashed var(--line);border-radius:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <b>Analyze your own clip</b>
+  <input type="file" name="file" accept="video/mp4" required style="color:var(--dim)">
+  <button type="submit" style="background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:6px 16px;font-weight:700;cursor:pointer">Upload &amp; go LIVE →</button>
+  <span style="color:var(--dim);font-size:12px">mp4 · live transcription + Claude analysis (needs Speechmatics key)</span>
+</form>
 <div class="grid">
 {% for c in clips %}
   <a class="card {% if c.baked %}baked{% endif %}" href="/coach/{{ c.id }}">

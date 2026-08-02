@@ -43,6 +43,7 @@
   {% endif %}
   <span id="status">idle — press play</span>
   <a class="tag" href="?mode=live" style="text-decoration:none;cursor:pointer">▶ TRY LIVE (model-generated)</a>
+  <button id="reportBtn" disabled style="background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">📋 Full report</button>
 </header>
 <main>
   <div>
@@ -56,6 +57,10 @@
   </div>
   <div class="pane"><h2>Live commentary</h2><div id="transcript"></div></div>
   <div class="pane" id="cards"><h2>Tactical event cards</h2></div>
+  <div class="pane" id="reportPane" style="grid-column:1 / -1;display:none;height:auto;max-height:70vh">
+    <h2>Full-match report <span id="reportBy" style="text-transform:none"></span></h2>
+    <div id="reportBody" style="font-size:14px"></div>
+  </div>
 </main>
 <script>
 const clipId = {{ clip.id | tojson }};
@@ -94,10 +99,41 @@ function start(){
     cardsEl.appendChild(div);
     div.scrollIntoView({behavior:'smooth', block:'nearest'});
   });
-  es.addEventListener('done', () => { statusEl.textContent = 'done'; es.close(); es = null; });
+  es.addEventListener('done', () => {
+    statusEl.textContent = 'done';
+    es.close(); es = null;
+    const btn = document.getElementById('reportBtn');
+    btn.disabled = false; btn.style.opacity = 1;
+  });
+  es.addEventListener('error', e => {
+    let msg = 'stream error';
+    try { msg = JSON.parse(e.data).msg || msg; } catch(_) {}
+    statusEl.textContent = '⚠ ' + msg;
+  });
   es.onerror = () => { statusEl.textContent = 'stream closed'; if (es) { es.close(); es = null; } };
 }
 document.getElementById('vid').addEventListener('play', start, {once:true});
+function mdToHtml(md){
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  return esc(md).split('\n').map(line => {
+    if (line.startsWith('### ')) return '<h4 style="margin:10px 0 4px">'+line.slice(4)+'</h4>';
+    if (line.startsWith('## ')) return '<h3 style="margin:14px 0 6px">'+line.slice(3)+'</h3>';
+    if (line.startsWith('# ')) return '<h2 style="margin:14px 0 8px">'+line.slice(2)+'</h2>';
+    if (line.startsWith('- ')) return '<div style="padding-left:16px">• '+line.slice(2)+'</div>';
+    return line.trim() ? '<p style="margin:6px 0">'+line+'</p>' : '';
+  }).join('').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+}
+document.getElementById('reportBtn').addEventListener('click', async () => {
+  const pane = document.getElementById('reportPane');
+  pane.style.display = 'block';
+  document.getElementById('reportBody').textContent = 'generating…';
+  const r = await fetch('/api/report/' + clipId + (urlMode ? '?mode=' + urlMode : ''));
+  const d = await r.json();
+  if (d.error) { document.getElementById('reportBody').textContent = d.error; return; }
+  document.getElementById('reportBy').textContent = '· by ' + d.generated_by;
+  document.getElementById('reportBody').innerHTML = mdToHtml(d.markdown);
+  pane.scrollIntoView({behavior:'smooth'});
+});
 </script>
 </body>
 </html>

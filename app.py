@@ -5,9 +5,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from flask import Flask, Response, abort, jsonify, render_template, request
+import subprocess
+import uuid
 
-from coach.clips import get_clip, list_clips
+from flask import Flask, Response, abort, jsonify, redirect, render_template, request
+
+from coach import report as report_mod
+from coach.claude import _cfg
+from coach.clips import AUDIO_DIR, TMP_DIR, get_clip, list_clips, register_upload, video_dir
 from coach.stream import sse_stream
 from coach.video import range_stream
 
@@ -29,7 +34,53 @@ def coach_view(clip_id):
 
 @app.route("/video/<path:fname>")
 def video(fname):
-    return range_stream(fname)
+    clip_id = fname.rsplit(".", 1)[0]
+    return range_stream(fname, video_dir(clip_id))
+
+
+@app.route("/api/report/<clip_id>")
+def api_report(clip_id):
+    if not get_clip(clip_id):
+        abort(404)
+    mode = request.args.get("mode") or os.environ.get("COACH_MODE", "replay")
+    result = report_mod.build_report(clip_id, mode, _cfg())
+    if result is None:
+        return jsonify(error="no cards yet — run the stream first"), 404
+    return jsonify(result)
+
+
+@app.route("/api/upload", methods=["POST"])
+def api_upload():
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify(error="no file"), 400
+    os.makedirs(TMP_DIR, exist_ok=True)
+    tmp_path = os.path.join(TMP_DIR, "up-" + uuid.uuid4().hex[:8] + ".mp4")
+    f.save(tmp_path)
+    ffmpeg = os.environ.get("FFMPEG", "/home/li/.local/bin/ffmpeg")
+    ffprobe = os.environ.get("FFPROBE", ffmpeg.replace("ffmpeg", "ffprobe"))
+    try:
+        out = subprocess.run(
+            [ffprobe, "-v", "error", "-show_entries", "format=duration",
+             "-of", "csv=p=0", tmp_path],
+            capture_output=True, text=True, timeout=30,
+        )
+        duration = float(out.stdout.strip() or 0)
+    except Exception:
+        duration = 0
+    clip_id = register_upload(tmp_path, f.filename, duration)
+    # 抽 16k 单声道音轨给 Speechmatics
+    os.makedirs(AUDIO_DIR, exist_ok=True)
+    wav = os.path.join(AUDIO_DIR, clip_id + ".wav")
+    try:
+        subprocess.run(
+            [ffmpeg, "-y", "-i", os.path.join(video_dir(clip_id), clip_id + ".mp4"),
+             "-ac", "1", "-ar", "16000", "-f", "wav", wav],
+            capture_output=True, timeout=120,
+        )
+    except Exception:
+        pass  # 音轨抽取失败不挡路,live 时会报明确错误
+    return redirect(f"/coach/{clip_id}?mode=live")
 
 
 @app.route("/api/stream/<clip_id>")

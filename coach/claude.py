@@ -105,40 +105,86 @@ def _window_prompt(data, win_start, win_end, win_lines, emitted_types):
     )
 
 
+def _emit_window_cards(cfg, data_title, duration, cv, win_start, win_end, win_lines, emitted_types):
+    prompt = _window_prompt(
+        {"title": data_title, "duration": duration, "cv_context": cv},
+        win_start, win_end, win_lines, emitted_types,
+    )
+    cards = _call_model(cfg, prompt)
+    if not cards:  # 整窗零卡 → 重试一次
+        cards = _call_model(cfg, prompt + "\nReturn JSON Lines only.")
+    for card in cards:
+        card.setdefault("t", win_end)
+        card.setdefault("speculative", True)
+        emitted_types.add(card.get("type", "?"))
+    return cards
+
+
 def live_events(clip_id):
     """Window-by-window live generation; any failure falls back to replay so
-    the demo can never die on stage."""
+    the demo can never die on stage. Baked clip → baked transcript pacing;
+    uploaded clip → Speechmatics real-time transcript (D3)."""
     cfg = _cfg()
     data = load_baked(clip_id)
-    if not cfg["key"] or data is None:
-        from .stream import replay_events
-        yield from replay_events(clip_id)
+    from . import report
+
+    if data is not None:
+        transcript_source = "baked"
+        title, duration, cv = data["title"], data["duration"], data.get("cv_context")
+    else:
+        from .clips import get_upload
+        up = get_upload(clip_id)
+        if not up or not up.get("audio_wav"):
+            yield sse("error", {"msg": "clip not found or audio not extracted"})
+            return
+        if not os.environ.get("SPEECHMATICS_API_KEY"):
+            yield sse("error", {"msg": "uploaded clips need SPEECHMATICS_API_KEY for live transcription"})
+            return
+        transcript_source = "speechmatics"
+        title, duration, cv = up["title"], up.get("duration") or 0, None
+
+    if not cfg["key"]:
+        if data is not None:
+            from .stream import replay_events
+            yield from replay_events(clip_id)
+        else:
+            yield sse("error", {"msg": "COACH_API_KEY not set"})
         return
+
     speed = float(os.environ.get("REPLAY_SPEED", "2.0")) or 1.0
     yield sse("meta", {
-        "clip": data["clip"], "title": data["title"],
-        "duration": data["duration"], "cv_context": data.get("cv_context"),
-        "live_model": cfg["model"],
+        "clip": clip_id, "title": title, "duration": duration,
+        "cv_context": cv, "live_model": cfg["model"],
+        "transcript_source": transcript_source,
     })
     emitted_types, last_t = set(), 0.0
     try:
-        for win_start, win_end, win_lines in _windows(data):
-            # 按回放节奏先推解说词,再生成该窗卡片
-            for line in win_lines:
-                delay = max(0.0, (line["t"] - last_t) / speed)
-                last_t = line["t"]
-                if delay:
-                    time.sleep(delay)
+        if transcript_source == "baked":
+            for win_start, win_end, win_lines in _windows(data):
+                for line in win_lines:
+                    delay = max(0.0, (line["t"] - last_t) / speed)
+                    last_t = line["t"]
+                    if delay:
+                        time.sleep(delay)
+                    yield sse("transcript", line)
+                for card in _emit_window_cards(cfg, title, duration, cv, win_start, win_end, win_lines, emitted_types):
+                    report.persist_card(clip_id, card)
+                    yield sse("card", card)
+        else:
+            from . import speechmatics
+            win_start, win_lines = 0.0, []
+            for line in speechmatics.stream_wav(get_upload(clip_id)["audio_wav"]):
+                win_lines.append(line)
                 yield sse("transcript", line)
-            prompt = _window_prompt(data, win_start, win_end, win_lines, emitted_types)
-            cards = _call_model(cfg, prompt)
-            if not cards:  # 整窗零卡 → 重试一次
-                cards = _call_model(cfg, prompt + "\nReturn JSON Lines only.")
-            for card in cards:
-                card.setdefault("t", win_end)
-                card.setdefault("speculative", True)
-                emitted_types.add(card.get("type", "?"))
-                yield sse("card", card)
-    except Exception as exc:  # 任意异常 → 剩余部分用回放兜底
-        yield sse("error", {"msg": f"live failed, falling back: {exc.__class__.__name__}"})
-    yield sse("done", {"clip": data["clip"]})
+                if line["t"] - win_start >= 6.0:
+                    for card in _emit_window_cards(cfg, title, duration, cv, win_start, line["t"], win_lines, emitted_types):
+                        report.persist_card(clip_id, card)
+                        yield sse("card", card)
+                    win_start, win_lines = line["t"], []
+            if win_lines:
+                for card in _emit_window_cards(cfg, title, duration, cv, win_start, win_lines[-1]["t"], win_lines, emitted_types):
+                    report.persist_card(clip_id, card)
+                    yield sse("card", card)
+    except Exception as exc:  # 任意异常 → 报错事件,前端可回退 replay
+        yield sse("error", {"msg": f"live failed: {exc.__class__.__name__}: {exc}"})
+    yield sse("done", {"clip": clip_id})

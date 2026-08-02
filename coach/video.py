@@ -4,13 +4,11 @@ import re
 
 from flask import Response, abort, request
 
-from .clips import VAULT_ROOT
-
 CHUNK = 1 << 16  # 64 KiB
 
 
-def range_stream(fname):
-    path = os.path.join(VAULT_ROOT, os.path.basename(fname))
+def range_stream(fname, base_dir):
+    path = os.path.join(base_dir, os.path.basename(fname))
     if not os.path.exists(path):
         abort(404)
     size = os.path.getsize(path)
