@@ -64,6 +64,15 @@
   </div>
   <div class="pane"><h2>Live commentary</h2><div id="transcript"></div></div>
   <div class="pane" id="cards"><h2>Tactical event cards</h2></div>
+  <div class="pane" id="coachPane" style="grid-column:1 / -1;height:44vh;display:flex;flex-direction:column">
+    <h2>🎙 AI Coach <span style="color:var(--dim);text-transform:none;font-weight:400;letter-spacing:0">— 多轮追问 · 工具调用闭环(analyze/知识库/球员/训练计划)</span></h2>
+    <div id="coachMsgs" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="coachInput" placeholder="问教练:这个动作怎么改进?谁擅长?给我 3 天训练计划…"
+             style="flex:1;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--fg);padding:9px 12px;font:inherit">
+      <button id="coachSend" style="background:var(--acc);color:var(--bg);border:0;border-radius:8px;padding:0 20px;font-weight:700;cursor:pointer">发送</button>
+    </div>
+  </div>
   <div class="pane" id="reportPane" style="grid-column:1 / -1;display:none;height:auto;max-height:70vh">
     <h2>Full-match report <span id="reportBy" style="text-transform:none"></span></h2>
     <div id="reportBody" style="font-size:14px"></div>
@@ -132,6 +141,46 @@ document.getElementById('vid').addEventListener('play', start);
 document.getElementById('vid').addEventListener('error', () => {
   statusEl.textContent = '⚠ video failed to load — check clip file';
 });
+// ---- AI Coach 对话面板(多轮 + 工具调用) ----
+const coachMsgs = document.getElementById('coachMsgs');
+const coachInput = document.getElementById('coachInput');
+const coachHistory = [];
+function bubble(role, html){
+  const d = document.createElement('div');
+  d.style.cssText = 'max-width:82%;padding:8px 12px;border-radius:10px;font-size:14px;line-height:1.55;white-space:pre-wrap;' +
+    (role === 'user'
+      ? 'align-self:flex-end;background:var(--acc);color:var(--bg);border-bottom-right-radius:2px'
+      : 'align-self:flex-start;background:var(--bg);border:1px solid var(--line);color:var(--fg);border-bottom-left-radius:2px');
+  d.innerHTML = html;
+  coachMsgs.appendChild(d);
+  coachMsgs.scrollTop = coachMsgs.scrollHeight;
+  return d;
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+async function coachSend(){
+  const msg = coachInput.value.trim();
+  if (!msg) return;
+  coachInput.value = '';
+  bubble('user', esc(msg));
+  const busy = bubble('assistant', '<span style="color:var(--dim)">教练思考中…</span>');
+  try {
+    const r = await fetch('/api/agent/chat', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({clip_id: clipId, message: msg, history: coachHistory})});
+    const d = await r.json();
+    if (!r.ok || d.error) { busy.innerHTML = '⚠ ' + esc(d.error || ('HTTP ' + r.status)); return; }
+    let traceHtml = '';
+    if (d.tool_trace && d.tool_trace.length) {
+      traceHtml = '<div style="margin-top:8px;font-size:12px;color:var(--gold);border-top:1px dashed var(--line);padding-top:6px">' +
+        d.tool_trace.map(t => '🔧 ' + esc(t.tool) + ' → ' + esc(t.summary)).join('<br>') + '</div>';
+    }
+    busy.innerHTML = esc(d.reply).replace(/\n/g, '<br>') + traceHtml;
+    coachHistory.push({role:'user', content: msg}, {role:'assistant', content: d.reply});
+  } catch (err) {
+    busy.innerHTML = '⚠ 请求失败: ' + esc(err.message);
+  }
+}
+document.getElementById('coachSend').addEventListener('click', coachSend);
+coachInput.addEventListener('keydown', e => { if (e.key === 'Enter') coachSend(); });
 function mdToHtml(md){
   const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   return esc(md).split('\n').map(line => {

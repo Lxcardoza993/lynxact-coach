@@ -11,6 +11,7 @@ import uuid
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request
 
 from coach import report as report_mod
+from coach import agent
 from coach.claude import _cfg
 from coach.clips import AUDIO_DIR, TMP_DIR, get_clip, list_clips, register_upload, video_dir
 from coach.stream import sse_stream
@@ -118,6 +119,18 @@ def api_stream(clip_id):
         mimetype="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.route("/api/agent/chat", methods=["POST"])
+def api_agent_chat():
+    """教练对话 Agent:多轮追问 + 工具调用闭环(GOAI Track 2 形态)。"""
+    d = request.get_json(force=True) or {}
+    clip_id = d.get("clip_id") or ""
+    message = d.get("message") or ""
+    if not message.strip():
+        return jsonify(error="empty message"), 400
+    result = agent.chat(clip_id, message, d.get("history") or [])
+    return jsonify(result)
 
 
 @app.route("/api/health")
