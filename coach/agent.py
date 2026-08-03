@@ -3,7 +3,7 @@
 把单向分析流水线升级成多轮对话 Agent:教练看完分析后可以追问
 ("这个动作怎么改进""谁擅长这个""给我 3 天训练计划"),Agent 通过
 工具调用(analyze_clip / query_technique / list_players / generate_training_plan)
-完成闭环任务。工具调用走 OpenAI 兼容 function calling(CPA 实测可用)。
+完成闭环任务。工具调用走 OpenAI 兼容 function calling(本地网关实测可用)。
 
 闭环演示(评审点):上传 clip → 分析出事件卡 → 追问改进 → 查知识库要领
 → 查代表球员 → 生成训练计划 → 导出。多轮交互 + 工具调用 + 知识增强 + 结果交付。
@@ -12,9 +12,10 @@ import json
 import os
 import re
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TECH_DIR = os.environ.get(
     "VAULT_TECH_DIR",
-    "/home/li/football-dribbling-vault/sports/football/techniques",
+    os.path.join(BASE_DIR, "data", "techniques"),
 )
 
 TOOLS = [

@@ -82,7 +82,7 @@ def api_upload():
     os.makedirs(TMP_DIR, exist_ok=True)
     tmp_path = os.path.join(TMP_DIR, "up-" + uuid.uuid4().hex[:8] + ".mp4")
     f.save(tmp_path)
-    ffmpeg = os.environ.get("FFMPEG", "/home/li/.local/bin/ffmpeg")
+    ffmpeg = os.environ.get("FFMPEG", "ffmpeg")
     ffprobe = os.environ.get("FFPROBE", ffmpeg.replace("ffmpeg", "ffprobe"))
     try:
         out = subprocess.run(

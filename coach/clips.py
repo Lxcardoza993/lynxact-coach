@@ -16,7 +16,8 @@ UPLOAD_DIR = os.path.join(TMP_DIR, "uploads")
 AUDIO_DIR = os.path.join(TMP_DIR, "audio")
 UPLOADS_REG = os.path.join(TMP_DIR, "uploads.json")
 VAULT_ROOT = os.environ.get(
-    "VAULT_ROOT", "/home/li/football-dribbling-vault/sports/football/videos"
+    "VAULT_ROOT",
+    os.path.join(BASE, "data", "vault"),
 )
 
 
