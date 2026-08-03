@@ -17,6 +17,10 @@ full-match report in real time.
 - **全场报告**:live=模型生成 markdown;replay=零成本模板(时间线/高光/事件分布/教练要点)
 - **PNG 导出**:一键下载 Top 3 时刻品牌分享卡(客户端 canvas,零依赖)
 - **回放兜底**:`data/baked/` 预烘焙 3 条金标 clip,断网无 key 也能完整演示
+- **🎙 AI Coach 对话 Agent**(GOAI Boundless Agents 形态):多轮追问 + 4 工具 function-calling 闭环
+  `analyze_clip`(clip 事件卡+CV 上下文+转录)/ `query_technique`(62 技术卡知识库)/
+  `list_players`(代表球员)/ `generate_training_plan`(3 天训练计划,JSON-Lines 结构化)
+  工具轨迹实时展示在 UI;Agent 只答工具输出或 clip 数据,不编球员不编技术
 
 ## 快速开始 / Quickstart
 
@@ -39,6 +43,7 @@ python3 app.py            # http://127.0.0.1:6901
 | `coach/claude.py` | live 引擎:6s 窗口 prompt + JSON Lines 解析 + grounding/speculative + 持久化 |
 | `coach/speechmatics.py` | Speechmatics Real-time 客户端(wav 按真实语速推流,句读出窗) |
 | `coach/report.py` | 报告引擎:模板(零模型)/ live(模型 markdown)双模式 |
+| `coach/agent.py` | Coach Agent:4 工具注册表 + 手写 YAML frontmatter 解析 + 最多 3 轮 tool-call 循环 |
 | `coach/video.py` | mp4 Range 拖进度流 |
 | `data/baked/*.json` | 预烘焙:转录 + 事件卡 + CV 融合上下文(3 条金标 clip) |
 
