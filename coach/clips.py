@@ -29,6 +29,7 @@ def parse_stem(stem: str) -> tuple[str, str, str]:
 
 
 def load_baked(clip_id: str) -> dict | None:
+    """Load the pre-baked analysis JSON for clip_id, or None if absent."""
     path = os.path.join(BAKED_DIR, os.path.basename(clip_id) + ".json")
     if not os.path.exists(path):
         return None
@@ -56,6 +57,7 @@ def _save_reg(reg: dict) -> None:
 
 
 def register_upload(src_path: str, orig_name: str, duration: float) -> str:
+    """Move an uploaded mp4 into UPLOAD_DIR, register title/duration, return its clip_id."""
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     slug = re.sub(r"[^a-z0-9]+", "-", os.path.splitext(orig_name)[0].lower()).strip("-")
     clip_id = f"{slug[:40]}-{uuid.uuid4().hex[:6]}"
@@ -68,6 +70,7 @@ def register_upload(src_path: str, orig_name: str, duration: float) -> str:
 
 
 def get_upload(clip_id: str) -> dict | None:
+    """Return the uploaded-clip dict, or None if unregistered or its mp4 is missing."""
     entry = _reg().get(clip_id)
     if not entry:
         return None
@@ -86,6 +89,7 @@ def get_upload(clip_id: str) -> dict | None:
 
 
 def get_clip(clip_id: str) -> dict | None:
+    """Return the clip dict (upload or vault source), or None if not found."""
     clip_id = os.path.basename(clip_id)   # external id can't escape its dirs
     up = get_upload(clip_id)
     if up:
@@ -111,10 +115,12 @@ def get_clip(clip_id: str) -> dict | None:
 
 
 def video_dir(clip_id: str) -> str:
+    """Return the directory holding clip_id's mp4 (UPLOAD_DIR for uploads, else VAULT_ROOT)."""
     return UPLOAD_DIR if get_upload(clip_id) else VAULT_ROOT
 
 
 def list_clips() -> list[dict]:
+    """Return all clips — uploads first, then vault — sorted for display."""
     clips = []
     for clip_id in _reg():
         clip = get_clip(clip_id)

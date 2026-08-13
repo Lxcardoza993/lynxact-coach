@@ -18,6 +18,7 @@ CARDS_DIR = os.path.join(BASE, "data", "tmp", "cards")
 
 
 def persist_card(clip_id: str, card: dict) -> None:
+    """Append a tactical event card to the clip's cards jsonl."""
     os.makedirs(CARDS_DIR, exist_ok=True)
     with open(os.path.join(CARDS_DIR, clip_id + ".jsonl"), "a", encoding="utf-8") as f:
         f.write(json.dumps(card, ensure_ascii=False) + "\n")
@@ -40,6 +41,7 @@ def _persisted_cards(clip_id: str) -> list[dict]:
 
 
 def get_cards(clip_id: str) -> tuple[str, list[dict], dict | None]:
+    """Return (title, cards, cv_context) from baked data, else persisted cards + None cv."""
     data = load_baked(clip_id)
     if data:
         return data["title"], data["events"], data.get("cv_context")
@@ -84,6 +86,7 @@ def template_report(title: str, cards: list[dict], cv: dict | None) -> str:
 
 
 def model_report(cfg: dict, title: str, cards: list[dict], cv: dict | None) -> str:
+    """Call the LLM to turn event cards into a concise markdown tactical report."""
     prompt = (
         "You are LynxAct Coach. Turn these tactical event cards into a concise "
         "full-match markdown report: summary paragraph, event timeline, top 3 "
@@ -107,6 +110,7 @@ def model_report(cfg: dict, title: str, cards: list[dict], cv: dict | None) -> s
 
 
 def build_report(clip_id: str, mode: str, cfg: dict) -> dict | None:
+    """Build a clip's tactical report — LLM in live mode (when key set), else the zero-model template."""
     title, cards, cv = get_cards(clip_id)
     if not cards:
         return None
