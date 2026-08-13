@@ -138,6 +138,7 @@ def _parse_frontmatter(txt):
 
 def _read_technique(slug):
     """Read one technique card from the vault knowledge base."""
+    slug = os.path.basename(slug)   # external technique can't escape TECH_DIR
     p = os.path.join(TECH_DIR, f"{slug}.md")
     if not os.path.isfile(p):
         return None
@@ -161,6 +162,7 @@ def _read_technique(slug):
 
 def _clip_cards(clip_id):
     """Event cards persisted for a clip (data/tmp/cards/<id>.jsonl)."""
+    clip_id = os.path.basename(clip_id)   # external id can't escape CARDS_DIR
     p = os.path.join(CARDS_DIR, f"{clip_id}.jsonl")
     if not os.path.isfile(p):
         return None
@@ -208,7 +210,7 @@ def _run_tool(name, args):
                 "title": data["title"],
                 "duration": data["duration"],
                 "cv_context": data.get("cv_context"),
-                "transcript": data["transcript"][:12],
+                "transcript": data.get("transcript", [])[:12],
                 "event_cards": cards or "no cards yet — run the analysis stream first (press play)",
             }
         up = get_upload(clip_id)

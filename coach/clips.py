@@ -29,7 +29,7 @@ def parse_stem(stem):
 
 
 def load_baked(clip_id):
-    path = os.path.join(BAKED_DIR, clip_id + ".json")
+    path = os.path.join(BAKED_DIR, os.path.basename(clip_id) + ".json")
     if not os.path.exists(path):
         return None
     with open(path, encoding="utf-8") as f:
@@ -86,6 +86,7 @@ def get_upload(clip_id):
 
 
 def get_clip(clip_id):
+    clip_id = os.path.basename(clip_id)   # external id can't escape its dirs
     up = get_upload(clip_id)
     if up:
         return {**up, "technique": None, "player": None, "year": None,

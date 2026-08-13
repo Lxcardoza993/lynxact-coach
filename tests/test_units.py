@@ -248,3 +248,55 @@ def test_read_technique_parses_card(tmp_path, monkeypatch):
 def test_read_technique_missing_returns_none(tmp_path, monkeypatch):
     monkeypatch.setattr(agent, "TECH_DIR", str(tmp_path))
     assert agent._read_technique("nope-not-here") is None
+
+
+# --- path-traversal defense (external clip_id / technique slug → must not
+#     escape the target dir; basename strips path components, like video.py) ---
+
+def test_load_baked_traversal_stays_in_dir(tmp_path, monkeypatch):
+    from coach import clips
+    baked = tmp_path / "baked"
+    baked.mkdir()
+    monkeypatch.setattr(clips, "BAKED_DIR", str(baked))
+    (tmp_path / "escape.json").write_text('{"pwned": true}', encoding="utf-8")
+    # "../escape" from baked resolves to tmp_path/escape.json (the pwned file)
+    assert clips.load_baked("../escape") is None   # basename → baked/escape.json (absent)
+
+
+def test_get_clip_vault_traversal_stays_in_dir(tmp_path, monkeypatch):
+    from coach import clips
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    monkeypatch.setattr(clips, "VAULT_ROOT", str(vault))
+    monkeypatch.setattr(clips, "BAKED_DIR", str(tmp_path / "baked"))
+    monkeypatch.setattr(clips, "UPLOADS_REG", str(tmp_path / "uploads.json"))
+    monkeypatch.setattr(clips, "UPLOAD_DIR", str(tmp_path / "uploads"))
+    monkeypatch.setattr(clips, "AUDIO_DIR", str(tmp_path / "audio"))
+    (tmp_path / "escape.mp4").write_bytes(b"x")    # outside vault
+    assert clips.get_clip("../escape") is None      # basename → vault/escape.mp4 (absent)
+
+
+def test_read_technique_traversal_stays_in_dir(tmp_path, monkeypatch):
+    tech = tmp_path / "tech"
+    tech.mkdir()
+    monkeypatch.setattr(agent, "TECH_DIR", str(tech))
+    (tmp_path / "escape.md").write_text("---\nname: Pwned\n---\nbody", encoding="utf-8")
+    assert agent._read_technique("../escape") is None   # basename → tech/escape.md (absent)
+
+
+def test_clip_cards_traversal_stays_in_dir(tmp_path, monkeypatch):
+    cards = tmp_path / "cards"
+    cards.mkdir()                                   # base dir must exist so ../ resolves through it
+    monkeypatch.setattr(agent, "CARDS_DIR", str(cards))
+    (tmp_path / "escape.jsonl").write_text('{"pwned": true}\n', encoding="utf-8")
+    assert agent._clip_cards("../escape") is None      # basename → cards/escape.jsonl (absent)
+
+
+def test_run_tool_analyze_clip_baked_without_transcript(tmp_path, monkeypatch):
+    # baked data missing the "transcript" key must not KeyError the tool loop
+    from coach import clips
+    monkeypatch.setattr(clips, "load_baked", lambda cid: {"title": "X", "duration": 5})
+    monkeypatch.setattr(agent, "_clip_cards", lambda cid: None)
+    ok, payload = agent._run_tool("analyze_clip", {"clip_id": "c1"})
+    assert ok is True
+    assert payload["transcript"] == []   # .get default, not KeyError
