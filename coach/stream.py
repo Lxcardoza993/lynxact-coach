@@ -9,15 +9,16 @@ COACH_MODE=live: delegate to coach.claude (D2 wiring) — same event shapes.
 import json
 import os
 import time
+from collections.abc import Iterator
 
 from .clips import load_baked
 
 
-def sse(kind, payload):
+def sse(kind: str, payload: dict) -> str:
     return f"event: {kind}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
-def replay_events(clip_id):
+def replay_events(clip_id: str) -> Iterator[str]:
     data = load_baked(clip_id)
     if data is None:
         return
@@ -41,7 +42,7 @@ def replay_events(clip_id):
     yield sse("done", {"clip": data["clip"]})
 
 
-def sse_stream(clip_id, mode=None):
+def sse_stream(clip_id: str, mode: str | None = None) -> Iterator[str]:
     mode = mode or os.environ.get("COACH_MODE", "replay")
     if mode == "live":
         from . import claude

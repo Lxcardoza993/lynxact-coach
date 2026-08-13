@@ -7,7 +7,7 @@ from flask import Response, abort, request
 CHUNK = 1 << 16  # 64 KiB
 
 
-def range_stream(fname, base_dir):
+def range_stream(fname: str, base_dir: str) -> Response:
     path = os.path.join(base_dir, os.path.basename(fname))
     if not os.path.exists(path):
         abort(404)
