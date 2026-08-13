@@ -48,3 +48,11 @@ python3 app.py            # http://127.0.0.1:6901
 | `data/baked/*.json` | 预烘焙:转录 + 事件卡 + CV 融合上下文(3 条金标 clip) |
 
 致谢 / Thanks: Linux.do 社区 · OpenClaw 生态 · lablab.ai · Speechmatics
+
+## 许可证 / License
+
+本仓库以 Apache License 2.0 授权,详见 [LICENSE](LICENSE) 全文。
+SPDX-License-Identifier: Apache-2.0
+
+Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE) for the
+full text. SPDX-License-Identifier: Apache-2.0
