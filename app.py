@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import subprocess
+# subprocess: only list-arg ffmpeg/ffprobe calls below — no shell injection
+import subprocess  # nosec
 import uuid
 
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request
@@ -88,7 +89,8 @@ def api_upload() -> Response:
     ffmpeg = os.environ.get("FFMPEG", "ffmpeg")
     ffprobe = os.environ.get("FFPROBE", ffmpeg.replace("ffmpeg", "ffprobe"))
     try:
-        out = subprocess.run(
+        # ffprobe via list args (path from trusted env) — no shell injection
+        out = subprocess.run(  # nosec
             [ffprobe, "-v", "error", "-show_entries", "format=duration",
              "-of", "csv=p=0", tmp_path],
             capture_output=True, text=True, timeout=30,
@@ -102,7 +104,8 @@ def api_upload() -> Response:
     os.makedirs(AUDIO_DIR, exist_ok=True)
     wav = os.path.join(AUDIO_DIR, clip_id + ".wav")
     try:
-        subprocess.run(
+        # ffmpeg via list args (path from trusted env) — no shell injection
+        subprocess.run(  # nosec
             [ffmpeg, "-y", "-i", os.path.join(video_dir(clip_id), clip_id + ".mp4"),
              "-ac", "1", "-ar", "16000", "-f", "wav", wav],
             capture_output=True, timeout=120,
