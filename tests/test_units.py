@@ -145,6 +145,26 @@ def test_template_report_empty_cards_no_cv():
     assert "## Event timeline" in md
 
 
+# --- agent._clip_cards (reads persisted cards jsonl via shared CARDS_DIR) ---
+
+def test_clip_cards_reads_jsonl(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "CARDS_DIR", str(tmp_path))
+    (tmp_path / "clip-1.jsonl").write_text(
+        '{"t": 1.0, "type": "pass", "analysis": "x"}\n'
+        '{"t": 2.0, "type": "shot", "analysis": "y"}\n',
+        encoding="utf-8",
+    )
+    cards = agent._clip_cards("clip-1")
+    assert len(cards) == 2
+    assert cards[0]["type"] == "pass"
+    assert cards[1]["type"] == "shot"
+
+
+def test_clip_cards_missing_returns_none(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "CARDS_DIR", str(tmp_path))
+    assert agent._clip_cards("nope") is None
+
+
 def test_template_report_top_moments_only_high_rating():
     cards = [
         {"t": 1, "type": "goal", "title": "Top", "rating": 10, "analysis": "x"},

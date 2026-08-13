@@ -12,6 +12,8 @@ import json
 import os
 import re
 
+from .report import CARDS_DIR
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TECH_DIR = os.environ.get(
     "VAULT_TECH_DIR",
@@ -156,7 +158,7 @@ def _read_technique(slug):
 
 def _clip_cards(clip_id):
     """Event cards persisted for a clip (data/tmp/cards/<id>.jsonl)."""
-    p = os.path.join(os.path.dirname(__file__), "..", "data", "tmp", "cards", f"{clip_id}.jsonl")
+    p = os.path.join(CARDS_DIR, f"{clip_id}.jsonl")
     if not os.path.isfile(p):
         return None
     with open(p, encoding="utf-8") as f:
