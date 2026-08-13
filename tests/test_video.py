@@ -83,3 +83,22 @@ def test_path_components_collapsed_to_leaf(client, tmp_path):
     r = client.get("/v/sub/dir/clip.mp4")
     assert r.status_code == 200
     assert r.data == bytes(range(200))
+
+
+def test_malformed_range_falls_back_to_full_200(client, tmp_path):
+    # A Range header that doesn't match bytes=<digits>-<digits> (no hyphen /
+    # non-numeric) must be ignored, not crash — serve the whole file as 200.
+    _seed(tmp_path, "clip.mp4", 200)
+    r = client.get("/v/clip.mp4", headers={"Range": "bytes=banana"})
+    assert r.status_code == 200
+    assert r.data == bytes(range(200))
+
+
+def test_both_empty_range_is_whole_file_206(client, tmp_path):
+    # "bytes=-" (start and end both empty) is a syntactically-valid Range that
+    # resolves to the whole representation, returned as 206 (start=0, end=size-1).
+    _seed(tmp_path, "clip.mp4", 200)
+    r = client.get("/v/clip.mp4", headers={"Range": "bytes=-"})
+    assert r.status_code == 206
+    assert r.data == bytes(range(200))
+    assert r.headers["Content-Range"] == "bytes 0-199/200"
