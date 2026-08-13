@@ -304,6 +304,24 @@ def test_chat_happy_path_runs_tool_then_replies(monkeypatch):
     assert res["tool_trace"][0]["ok"] is True
 
 
+def test_chat_ignores_malformed_history(monkeypatch):
+    # history arrives from the request body (user-provided + untrusted). A value
+    # that isn't a list, or a list holding non-dict items, must be skipped — not
+    # raise AttributeError (h.get on a str/int) through /api/agent/chat -> 500.
+    # The tool loop already isinstance-guards untrusted tool_calls; history too.
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+
+    def fake_model(cfg, messages, tools):
+        return {"content": "ok", "tool_calls": []}
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    res = agent.chat("", "hi", "not-a-list")                       # not a list -> no history
+    assert res["reply"] == "ok"
+    res = agent.chat("", "hi", [{"role": "user", "content": "q"}, "junk", 5])  # non-dict items skipped
+    assert res["reply"] == "ok"
+
+
 def test_template_report_top_moments_only_high_rating():
     cards = [
         {"t": 1, "type": "goal", "title": "Top", "rating": 10, "analysis": "x"},
@@ -574,6 +592,26 @@ def test_chat_injects_uploaded_clip_context(monkeypatch):
     monkeypatch.setattr(agent, "_call_tool_model", fake_model)
     agent.chat("up1", "hi", [])
     assert any("Current clip: Upload" in m.get("content", "") for m in seen["messages"])
+
+
+def test_chat_unknown_clip_has_no_clip_context(monkeypatch):
+    # A non-empty clip_id that is neither baked nor an uploaded clip must leave
+    # clip_ctx empty — the agent replies without clip context, not crash. Covers
+    # the `if up:` False fall-through (clip_id given but not found anywhere).
+    from coach import claude, clips
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    monkeypatch.setattr(clips, "load_baked", lambda cid: None)
+    monkeypatch.setattr(clips, "get_upload", lambda cid: None)
+    seen = {}
+
+    def fake_model(cfg, messages, tools):
+        seen["messages"] = messages
+        return {"content": "ok", "tool_calls": []}
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    res = agent.chat("ghost-clip-id", "hi", [])
+    assert res["reply"] == "ok"
+    assert [m["role"] for m in seen["messages"]] == ["system", "user"]   # no clip-ctx system msg
 
 
 def test_chat_malformed_tool_arguments_falls_back_to_empty(monkeypatch):

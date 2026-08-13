@@ -309,7 +309,10 @@ def chat(clip_id: str, message: str, history: list[dict] | None, max_tool_rounds
     from .claude import _cfg
     cfg = _cfg()
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for h in (history or [])[-8:]:
+    hist = history if isinstance(history, list) else []
+    for h in hist[-8:]:
+        if not isinstance(h, dict):
+            continue   # history is user-provided; a non-dict item is skipped, not .get -> 500
         messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
     clip_ctx = ""
     if clip_id:
