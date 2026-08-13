@@ -1,0 +1,6 @@
+# LynxAct Coach runtime dependencies (pinned lock).
+# Install: pip install -r requirements.txt
+flask==3.1.3
+python-dotenv==1.0.1
+requests==2.34.2
+websocket-client==1.9.0

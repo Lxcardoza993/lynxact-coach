@@ -1,0 +1,5 @@
+# Development dependencies.
+# Install: pip install -r requirements-dev.txt
+-r requirements.txt
+pytest==7.4.4
+ruff==0.16.1

@@ -1,0 +1,28 @@
+[project]
+name = "lynxact-coach"
+version = "0.1.0"
+description = "LynxAct Coach — sports video tactical analysis Flask app"
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.1",
+    "python-dotenv>=1.0",
+    "requests>=2.32",
+    "websocket-client>=1.9",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+# Focused rule set; expanded as issues are fixed round-by-round.
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# load_dotenv() runs before stdlib/3rd-party imports by design.
+"app.py" = ["E402"]
