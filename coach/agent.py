@@ -166,8 +166,17 @@ def _clip_cards(clip_id: str) -> list[dict] | None:
     p = os.path.join(CARDS_DIR, f"{clip_id}.jsonl")
     if not os.path.isfile(p):
         return None
+    cards = []
     with open(p, encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                cards.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue   # skip a corrupt line (partial flush/disk error); parity with report._persisted_cards
+    return cards
 
 
 def _jsonl_call(cfg: dict, prompt: str) -> list[dict]:
@@ -338,7 +347,12 @@ def chat(clip_id: str, message: str, history: list[dict] | None, max_tool_rounds
                 args = json.loads(fn.get("arguments") or "{}")
             except json.JSONDecodeError:
                 args = {}
-            ok, payload = _run_tool(fn["name"], args)
+            try:
+                ok, payload = _run_tool(fn["name"], args)
+            except Exception as exc:  # tool crash must not kill the chat loop
+                ok = False
+                payload = {"error": f"tool {fn['name']} crashed: {exc.__class__.__name__}: {exc}"}
+                logger.warning("tool %s crashed: %s", fn["name"], exc)
             trace.append({
                 "tool": fn["name"],
                 "args": args,
@@ -358,6 +372,8 @@ def chat(clip_id: str, message: str, history: list[dict] | None, max_tool_rounds
 
 def _summarize(name: str, payload: dict | list) -> str:
     """Short human-readable summary of a tool result for the UI trace."""
+    if isinstance(payload, dict) and payload.get("error"):
+        return "error: " + str(payload["error"])[:120]
     if name in ("query_technique", "list_players"):
         return {
             "query_technique": (

@@ -181,6 +181,24 @@ def test_clip_cards_missing_returns_none(tmp_path, monkeypatch):
     assert agent._clip_cards("nope") is None
 
 
+def test_clip_cards_skips_malformed_lines(tmp_path, monkeypatch):
+    # A corrupt line (partial flush/disk error) must not crash the whole read;
+    # good lines still parse. Parity with report._persisted_cards.
+    monkeypatch.setattr(agent, "CARDS_DIR", str(tmp_path))
+    (tmp_path / "c.jsonl").write_text(
+        '{"t": 1.0, "type": "pass", "analysis": "x"}\n'
+        '\n'
+        'this line is not json\n'
+        '\n'
+        '{"t": 2.0, "type": "shot", "analysis": "y"}\n',
+        encoding="utf-8",
+    )
+    cards = agent._clip_cards("c")
+    assert len(cards) == 2
+    assert cards[0]["type"] == "pass"
+    assert cards[1]["type"] == "shot"
+
+
 # --- agent.chat (malformed model tool_calls must be skipped, not crash) ---
 
 def test_chat_skips_malformed_tool_calls(monkeypatch):
@@ -205,6 +223,33 @@ def test_chat_skips_malformed_tool_calls(monkeypatch):
     assert res["reply"] == "done"
     assert len(res["tool_trace"]) == 1
     assert res["tool_trace"][0]["tool"] == "list_players"
+
+
+def test_chat_tool_crash_does_not_500(monkeypatch):
+    # An unexpected tool exception (corrupt baked json, IO error) must degrade to a
+    # trace error, not raise through /api/agent/chat -> 500.
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    calls = {"n": 0}
+
+    def fake_model(cfg, messages, tools):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {"content": None, "tool_calls": [
+                {"id": "t1", "function": {"name": "list_players",
+                                          "arguments": '{"technique":"stepover"}'}}]}
+        return {"content": "recovered", "tool_calls": []}
+
+    def boom(name, args):
+        raise RuntimeError("disk on fire")
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    monkeypatch.setattr(agent, "_run_tool", boom)
+    res = agent.chat("", "who?", [])
+    assert res["reply"] == "recovered"
+    assert len(res["tool_trace"]) == 1
+    assert res["tool_trace"][0]["ok"] is False
+    assert "crashed" in res["tool_trace"][0]["summary"]
 
 
 def test_chat_happy_path_runs_tool_then_replies(monkeypatch):
