@@ -21,14 +21,14 @@ VAULT_ROOT = os.environ.get(
 )
 
 
-def parse_stem(stem):
+def parse_stem(stem: str) -> tuple[str, str, str]:
     """'la-croqueta_lionel-messi_2015' -> (technique, player, year)."""
     rest, _, year = stem.rpartition("_")
     technique, _, player = rest.partition("_")
     return technique.replace("-", " "), player.replace("-", " "), year
 
 
-def load_baked(clip_id):
+def load_baked(clip_id: str) -> dict | None:
     path = os.path.join(BAKED_DIR, os.path.basename(clip_id) + ".json")
     if not os.path.exists(path):
         return None
@@ -36,7 +36,7 @@ def load_baked(clip_id):
         return json.load(f)
 
 
-def _reg():
+def _reg() -> dict:
     if not os.path.exists(UPLOADS_REG):
         return {}
     try:
@@ -47,7 +47,7 @@ def _reg():
     return reg if isinstance(reg, dict) else {}
 
 
-def _save_reg(reg):
+def _save_reg(reg: dict) -> None:
     os.makedirs(TMP_DIR, exist_ok=True)
     tmp = UPLOADS_REG + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -55,7 +55,7 @@ def _save_reg(reg):
     os.replace(tmp, UPLOADS_REG)
 
 
-def register_upload(src_path, orig_name, duration):
+def register_upload(src_path: str, orig_name: str, duration: float) -> str:
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     slug = re.sub(r"[^a-z0-9]+", "-", os.path.splitext(orig_name)[0].lower()).strip("-")
     clip_id = f"{slug[:40]}-{uuid.uuid4().hex[:6]}"
@@ -67,7 +67,7 @@ def register_upload(src_path, orig_name, duration):
     return clip_id
 
 
-def get_upload(clip_id):
+def get_upload(clip_id: str) -> dict | None:
     entry = _reg().get(clip_id)
     if not entry:
         return None
@@ -85,7 +85,7 @@ def get_upload(clip_id):
     }
 
 
-def get_clip(clip_id):
+def get_clip(clip_id: str) -> dict | None:
     clip_id = os.path.basename(clip_id)   # external id can't escape its dirs
     up = get_upload(clip_id)
     if up:
@@ -110,11 +110,11 @@ def get_clip(clip_id):
     }
 
 
-def video_dir(clip_id):
+def video_dir(clip_id: str) -> str:
     return UPLOAD_DIR if get_upload(clip_id) else VAULT_ROOT
 
 
-def list_clips():
+def list_clips() -> list[dict]:
     clips = []
     for clip_id in _reg():
         clip = get_clip(clip_id)
