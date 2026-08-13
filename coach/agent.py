@@ -49,7 +49,10 @@ TOOLS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "technique": {"type": "string", "description": "technique slug, e.g. body-feint, elastico, cruyff-turn"}
+                    "technique": {
+                        "type": "string",
+                        "description": "technique slug, e.g. body-feint, elastico, cruyff-turn",
+                    },
                 },
                 "required": ["technique"],
             },
@@ -154,7 +157,8 @@ def _clip_cards(clip_id):
     p = os.path.join(os.path.dirname(__file__), "..", "data", "tmp", "cards", f"{clip_id}.jsonl")
     if not os.path.isfile(p):
         return None
-    return [json.loads(l) for l in open(p) if l.strip()]
+    with open(p, encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
 
 
 def _jsonl_call(cfg, prompt):
@@ -294,7 +298,8 @@ def chat(clip_id, message, history, max_tool_rounds=3):
         from .clips import get_upload, load_baked
         data = load_baked(clip_id)
         if data is not None:
-            clip_ctx = f"Current clip: {data['title']} ({data['duration']}s, CV fusion: {json.dumps(data.get('cv_context'), ensure_ascii=False)})."
+            cv_ctx = json.dumps(data.get('cv_context'), ensure_ascii=False)
+            clip_ctx = f"Current clip: {data['title']} ({data['duration']}s, CV fusion: {cv_ctx})."
         else:
             up = get_upload(clip_id)
             if up:
@@ -327,14 +332,20 @@ def chat(clip_id, message, history, max_tool_rounds=3):
                 "tool_call_id": tc["id"],
                 "content": json.dumps(payload, ensure_ascii=False)[:6000],
             })
-    return {"reply": "I could not finish that in the allowed rounds — ask me again, or narrow the question.", "tool_trace": trace}
+    return {
+        "reply": "I could not finish that in the allowed rounds — ask me again, or narrow the question.",
+        "tool_trace": trace,
+    }
 
 
 def _summarize(name, payload):
     """Short human-readable summary of a tool result for the UI trace."""
     if name in ("query_technique", "list_players"):
         return {
-            "query_technique": f"{payload.get('name')} · {payload.get('difficulty')} · {len(payload.get('key_points', []))} key points",
+            "query_technique": (
+                f"{payload.get('name')} · {payload.get('difficulty')} · "
+                f"{len(payload.get('key_points', []))} key points"
+            ),
             "list_players": f"{len(payload.get('players', []))} players",
         }.get(name, "ok")
     if name == "analyze_clip":
