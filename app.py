@@ -10,8 +10,8 @@ import uuid
 
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request
 
-from coach import report as report_mod
 from coach import agent
+from coach import report as report_mod
 from coach.claude import _cfg
 from coach.clips import AUDIO_DIR, TMP_DIR, get_clip, list_clips, register_upload, video_dir
 from coach.stream import sse_stream

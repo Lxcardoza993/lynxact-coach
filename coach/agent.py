@@ -188,7 +188,7 @@ def _run_tool(name, args):
     """Execute a tool call; returns (ok, payload)."""
     if name == "analyze_clip":
         clip_id = args.get("clip_id", "")
-        from .clips import load_baked, get_upload
+        from .clips import get_upload, load_baked
         data = load_baked(clip_id)
         if data is not None:
             cards = _clip_cards(clip_id)
@@ -224,7 +224,7 @@ def _run_tool(name, args):
         return True, {"technique": card["name"], "players": card["representative_players"]}
 
     if name == "generate_training_plan":
-        from .claude import _call_model, _cfg
+        from .claude import _cfg
         cfg = _cfg()
         card = _read_technique(args.get("technique", ""))
         key = json.dumps(card.get("key_points", []), ensure_ascii=False) if card else "[]"
@@ -291,7 +291,7 @@ def chat(clip_id, message, history, max_tool_rounds=3):
         messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
     clip_ctx = ""
     if clip_id:
-        from .clips import load_baked, get_upload
+        from .clips import get_upload, load_baked
         data = load_baked(clip_id)
         if data is not None:
             clip_ctx = f"Current clip: {data['title']} ({data['duration']}s, CV fusion: {json.dumps(data.get('cv_context'), ensure_ascii=False)})."

@@ -9,7 +9,7 @@ import os
 
 import requests
 
-from .clips import BAKED_DIR, BASE, load_baked
+from .clips import BASE, load_baked
 
 CARDS_DIR = os.path.join(BASE, "data", "tmp", "cards")
 
