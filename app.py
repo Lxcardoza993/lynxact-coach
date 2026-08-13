@@ -1,4 +1,5 @@
 """LynxAct Coach — Flask entry. http://127.0.0.1:6901"""
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -19,6 +20,8 @@ from coach.video import range_stream
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024  # 300MB 上传上限
+
+logger = logging.getLogger(__name__)
 
 
 def _err_page(code, msg):
@@ -91,7 +94,8 @@ def api_upload():
             capture_output=True, text=True, timeout=30,
         )
         duration = float(out.stdout.strip() or 0)
-    except Exception:
+    except Exception as exc:
+        logger.warning("ffprobe failed for %s: %s", tmp_path, exc)
         duration = 0
     clip_id = register_upload(tmp_path, f.filename, duration)
     # 抽 16k 单声道音轨给 Speechmatics
@@ -103,8 +107,8 @@ def api_upload():
              "-ac", "1", "-ar", "16000", "-f", "wav", wav],
             capture_output=True, timeout=120,
         )
-    except Exception:
-        pass  # 音轨抽取失败不挡路,live 时会报明确错误
+    except Exception as exc:
+        logger.warning("audio extraction failed for %s: %s", clip_id, exc)
     return redirect(f"/coach/{clip_id}?mode=live")
 
 
