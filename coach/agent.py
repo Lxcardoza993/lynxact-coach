@@ -9,10 +9,13 @@
 → 查代表球员 → 生成训练计划 → 导出。多轮交互 + 工具调用 + 知识增强 + 结果交付。
 """
 import json
+import logging
 import os
 import re
 
 from .report import CARDS_DIR
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TECH_DIR = os.environ.get(
@@ -315,10 +318,19 @@ def chat(clip_id, message, history, max_tool_rounds=3):
     trace = []
     for _ in range(max_tool_rounds):
         msg = _call_tool_model(cfg, messages, TOOLS)
-        if not msg.get("tool_calls"):
+        # Model output is external/untrusted: guard malformed tool_calls
+        # (missing function/id) so a bad response can't KeyError the loop.
+        tcs = []
+        for tc in msg.get("tool_calls") or []:
+            fn = tc.get("function") if isinstance(tc, dict) else None
+            if isinstance(fn, dict) and fn.get("name") and "id" in tc:
+                tcs.append(tc)
+            else:
+                logger.warning("malformed tool_call skipped: %r", tc)
+        if not tcs:
             return {"reply": msg.get("content") or "...", "tool_trace": trace}
-        messages.append({"role": "assistant", "content": msg.get("content") or "", "tool_calls": msg["tool_calls"]})
-        for tc in msg["tool_calls"]:
+        messages.append({"role": "assistant", "content": msg.get("content") or "", "tool_calls": tcs})
+        for tc in tcs:
             fn = tc["function"]
             try:
                 args = json.loads(fn.get("arguments") or "{}")

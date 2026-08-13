@@ -165,6 +165,32 @@ def test_clip_cards_missing_returns_none(tmp_path, monkeypatch):
     assert agent._clip_cards("nope") is None
 
 
+# --- agent.chat (malformed model tool_calls must be skipped, not crash) ---
+
+def test_chat_skips_malformed_tool_calls(monkeypatch):
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    calls = {"n": 0}
+
+    def fake_model(cfg, messages, tools):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {"content": None, "tool_calls": [
+                {"id": "good", "function": {"name": "list_players",
+                                            "arguments": '{"technique":"stepover"}'}},
+                {"id": "bad", "function": {}},        # malformed: no name
+                {"no_function": True},                # malformed: no function
+            ]}
+        return {"content": "done", "tool_calls": []}
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    monkeypatch.setattr(agent, "_run_tool", lambda name, args: (True, {"name": name}))
+    res = agent.chat("", "q", [])
+    assert res["reply"] == "done"
+    assert len(res["tool_trace"]) == 1
+    assert res["tool_trace"][0]["tool"] == "list_players"
+
+
 def test_template_report_top_moments_only_high_rating():
     cards = [
         {"t": 1, "type": "goal", "title": "Top", "rating": 10, "analysis": "x"},
