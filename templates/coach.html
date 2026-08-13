@@ -104,7 +104,7 @@ function start(){
     const d = JSON.parse(e.data);
     const div = document.createElement('div');
     div.className = 'tr';
-    div.innerHTML = '<span class="ts">' + fmt(d.t) + '</span>' + d.text;
+    div.innerHTML = '<span class="ts">' + fmt(d.t) + '</span>' + esc(d.text);
     trEl.appendChild(div);
     trEl.parentElement.scrollTop = trEl.parentElement.scrollHeight;
   });
@@ -114,12 +114,12 @@ function start(){
     const div = document.createElement('div');
     div.className = 'ecard' + ((d.rating || 0) >= 9 ? ' hot' : '');
     div.innerHTML =
-      '<div class="head"><span class="type">' + d.type + '</span>' +
+      '<div class="head"><span class="type">' + esc(d.type) + '</span>' +
       '<span class="ts">' + fmt(d.t) + '</span>' +
       '<span class="title"></span>' +
       '<span class="rating">★ ' + d.rating + '</span></div>' +
       '<div class="an"></div>' +
-      (d.players && d.players.length ? '<div class="players">👤 ' + d.players.join(' · ') + '</div>' : '') +
+      (d.players && d.players.length ? '<div class="players">👤 ' + esc(d.players.join(' · ')) + '</div>' : '') +
       (d.speculative ? '<div class="spec">⚠ speculative — not grounded in CV/transcript</div>' : '');
     div.querySelector('.title').textContent = d.title;
     div.querySelector('.an').textContent = d.analysis;
