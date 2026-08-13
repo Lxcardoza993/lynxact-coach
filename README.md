@@ -12,7 +12,7 @@ full-match report in real time.
 
 - **三栏实时页**:视频 + 解说流 + 战术事件卡(reception/setup/dribble/burst/finish,1–10 评分)
 - **CV 融合 grounding**:三源加权投票(2×VLM + player-prior)注入 prompt;无证据的卡诚实标 ⚠ speculative
-- **live 模式**:6s 窗口化模型生成,严格 JSON Lines 解析 + 整窗重试;任意异常回退 replay,演示不死
+- **live 模式**:6s 窗口化模型生成,严格 JSON Lines 解析 + 整窗重试;任意异常降级为 error 事件不 500(无 key + 预烘焙 clip 自动回退 replay),演示不死
 - **上传通道**:拖入 mp4 → ffprobe 时长 → ffmpeg 抽 16k 音轨 → Speechmatics 实时转录 → live 分析
 - **全场报告**:live=模型生成 markdown;replay=零成本模板(时间线/高光/事件分布/教练要点)
 - **PNG 导出**:一键下载 Top 3 时刻品牌分享卡(客户端 canvas,零依赖)

@@ -146,8 +146,9 @@ def _emit_window_cards(
 
 
 def live_events(clip_id: str) -> Iterator[str]:
-    """Window-by-window live generation; any failure falls back to replay so
-    the demo can never die on stage. Baked clip → baked transcript pacing;
+    """Window-by-window live generation; any failure degrades to an error event
+    (never a 500) so the demo can never die on stage. The no-key + baked-clip
+    case specifically falls back to replay. Baked clip → baked transcript pacing;
     uploaded clip → Speechmatics real-time transcript (D3)."""
     cfg = _cfg()
     data = load_baked(clip_id)
