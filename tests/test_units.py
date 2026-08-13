@@ -227,6 +227,19 @@ def test_template_report_top_moments_only_high_rating():
     assert "Top" in md  # rating 10 -> top moment
 
 
+def test_template_report_string_t_rating_no_crash():
+    # LLM cards sometimes emit t/rating as strings (malformed). Sort keys +
+    # :.1f formats must coerce rather than raise TypeError → 500 on /api/report.
+    cards = [
+        {"t": "1", "type": "goal", "title": "StrT", "rating": "9", "analysis": "a"},
+        {"t": 2.5, "type": "pass", "title": "Num", "rating": 3, "analysis": "b"},
+        {"t": "garbage", "type": "burst", "title": "Bad", "rating": "excellent", "analysis": "c"},
+    ]
+    md = template_report("M", cards, None)
+    assert "## Event timeline" in md
+    assert "StrT" in md and "Num" in md and "Bad" in md  # all rendered, no crash
+
+
 # --- agent._read_technique ---
 
 def test_read_technique_parses_card(tmp_path, monkeypatch):

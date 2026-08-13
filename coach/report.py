@@ -49,8 +49,20 @@ def get_cards(clip_id: str) -> tuple[str, list[dict], dict | None]:
     return title, _persisted_cards(clip_id), None
 
 
+def _num(v, default=0.0):
+    """Coerce to float for sort keys / :.1f formats; LLM cards sometimes emit numbers as strings."""
+    if isinstance(v, (int, float)):
+        return float(v)
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return default
+
+
 def template_report(title: str, cards: list[dict], cv: dict | None) -> str:
     """零模型模板报告:时间线 + 高光时刻 + 类型分布 + 教练要点。"""
+    # LLM cards may emit t/rating as strings; coerce so sort keys + :.1f never raise.
+    cards = [{**c, "t": _num(c.get("t")), "rating": _num(c.get("rating"))} for c in cards]
     lines = [f"# Tactical Report — {title}", ""]
     if cv:
         lines.append(
