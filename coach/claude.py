@@ -176,7 +176,13 @@ def live_events(clip_id: str) -> Iterator[str]:
             yield sse("error", {"msg": "COACH_API_KEY not set"})
         return
 
-    speed = float(os.environ.get("REPLAY_SPEED", "2.0")) or 1.0
+    try:
+        speed = float(os.environ.get("REPLAY_SPEED", "2.0")) or 1.0
+    except ValueError:
+        # Non-numeric REPLAY_SPEED (operator typo) degrades to 1.0 rather than
+        # raising — this assignment sits OUTSIDE the per-window try/except below,
+        # so a ValueError here would 500 /api/stream. Mirror stream.replay_events.
+        speed = 1.0
     yield sse("meta", {
         "clip": clip_id, "title": title, "duration": duration,
         "cv_context": cv, "live_model": cfg["model"],

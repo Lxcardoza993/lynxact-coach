@@ -189,3 +189,47 @@ def test_live_events_model_failure_yields_error_then_done(monkeypatch):
     frames = list(claude.live_events("clip1"))
     assert any("live failed" in f for f in frames)
     assert frames[-1].startswith("event: done")
+
+
+def test_live_events_non_numeric_speed_falls_back(monkeypatch):
+    # Same guard gap as stream.replay_events (R93): a non-numeric REPLAY_SPEED
+    # raised ValueError at the speed assignment, OUTSIDE live_events' try/except
+    # (which starts later at the per-window loop), so /api/stream -> 500. The
+    # docstring promises a demo that "can never die on stage"; float() is
+    # wrapped -> 1.0 (matching the existing 0-guard fallback).
+    monkeypatch.setattr(claude, "load_baked", lambda cid: _BAKED)
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    monkeypatch.setattr(claude, "_call_model", lambda cfg, p: [{"type": "goal", "analysis": "x", "t": 5.0}])
+    monkeypatch.setattr(claude.time, "sleep", lambda s: None)
+    import coach.report as report
+    monkeypatch.setattr(report, "persist_card", lambda cid, c: None)
+    monkeypatch.setenv("REPLAY_SPEED", "fast")
+    frames = list(claude.live_events("clip1"))   # must not raise
+    kinds = [_kind(f) for f in frames]
+    assert kinds[0] == "meta"
+    assert kinds[-1] == "done"
+
+
+def test_live_events_speechmatics_ends_on_boundary_no_trailing(monkeypatch):
+    # When the Speechmatics stream's last line completes a 6s window (flushed
+    # inside the loop), win_lines is empty at the end -> the trailing-flush
+    # branch is skipped (no spurious trailing card). Covers `if win_lines:` False.
+    monkeypatch.setattr(claude, "load_baked", lambda cid: None)
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    monkeypatch.setenv("SPEECHMATICS_API_KEY", "sm")
+    from coach import clips, speechmatics
+    monkeypatch.setattr(clips, "get_upload", lambda cid: {"title": "up", "duration": 30, "audio_wav": "/x.wav"})
+
+    def fake_stream(wav, lang=None):
+        yield {"t": 0.0, "text": "kickoff"}
+        yield {"t": 7.0, "text": "shot."}      # 7-0>=6 -> flush; loop ends -> win_lines=[]
+
+    monkeypatch.setattr(speechmatics, "stream_wav", fake_stream)
+    monkeypatch.setattr(claude, "_call_model", lambda cfg, p: [{"type": "goal", "analysis": "x"}])
+    monkeypatch.setattr(claude.time, "sleep", lambda s: None)
+    import coach.report as report
+    monkeypatch.setattr(report, "persist_card", lambda cid, c: None)
+    frames = list(claude.live_events("clip1"))
+    kinds = [_kind(f) for f in frames]
+    assert kinds[-1] == "done"
+    assert kinds.count("card") == 1            # one flushed window, no trailing card
