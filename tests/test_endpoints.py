@@ -125,3 +125,24 @@ def test_stream_replay_ok(monkeypatch):
     assert b"hello" in r.data
     assert r.headers["Cache-Control"] == "no-cache"
     assert r.headers["X-Accel-Buffering"] == "no"
+
+
+# --- index + coach view (template-rendering routes) ---
+
+def test_index_renders():
+    r = _client.get("/")
+    assert r.status_code == 200
+    assert r.mimetype == "text/html"
+
+
+def test_coach_view_renders(monkeypatch):
+    monkeypatch.setattr(app_module, "get_clip", lambda cid: {"id": cid, "title": "T"})
+    r = _client.get("/coach/c1")
+    assert r.status_code == 200
+    assert r.mimetype == "text/html"
+
+
+def test_coach_view_404(monkeypatch):
+    monkeypatch.setattr(app_module, "get_clip", lambda cid: None)
+    r = _client.get("/coach/missing")
+    assert r.status_code == 404
