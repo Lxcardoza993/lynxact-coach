@@ -25,6 +25,7 @@ python3 -m pytest                                              # test suite
 python3 -m pytest --cov=coach --cov=app --cov-report=term-missing  # + coverage
 ruff check coach app.py                                        # lint
 python3 -m bandit -r coach app.py                              # security scan
+pip-audit -r requirements.txt                                 # dependency CVE scan (pinned runtime deps)
 ```
 
 `pyproject.toml` sets `pythonpath = ["."]`, so run pytest from the repo
