@@ -17,7 +17,7 @@ from collections.abc import Iterator
 
 import requests
 
-from .clips import load_baked
+from .clips import _num, load_baked
 from .stream import sse
 
 SYSTEM_PROMPT = """You are LynxAct Coach, an elite football tactical analyst.
@@ -72,6 +72,13 @@ def _parse_cards(text: str) -> list[dict]:
         except json.JSONDecodeError:
             continue
         if isinstance(card, dict) and "type" in card and "analysis" in card:
+            # Coerce present numeric fields so downstream (JS fmt(d.t).toFixed,
+            # export canvas, persisted jsonl -> template_report) never receive
+            # string numerics. Absent t is left for _emit_window_cards setdefault.
+            if "t" in card:
+                card["t"] = _num(card["t"])
+            if "rating" in card:
+                card["rating"] = _num(card["rating"])
             cards.append(card)
     return cards
 

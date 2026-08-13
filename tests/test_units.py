@@ -126,6 +126,22 @@ def test_parse_cards_empty():
     assert _parse_cards("") == []
 
 
+def test_parse_cards_coerces_string_t_rating():
+    # LLM may emit t/rating as strings; _parse_cards coerces present fields at the
+    # source so downstream (SSE card event -> JS fmt(d.t).toFixed, export canvas,
+    # persisted jsonl -> template_report) never receive string numerics.
+    text = (
+        '{"t": "1.5", "type": "goal", "analysis": "x", "rating": "9"}\n'
+        '{"t": "abc", "type": "pass", "analysis": "y", "rating": "excellent"}\n'
+    )
+    cards = _parse_cards(text)
+    assert len(cards) == 2
+    assert cards[0]["t"] == 1.5 and isinstance(cards[0]["t"], float)
+    assert cards[0]["rating"] == 9.0 and isinstance(cards[0]["rating"], float)
+    assert cards[1]["t"] == 0.0        # "abc" unparseable -> default
+    assert cards[1]["rating"] == 0.0  # "excellent" unparseable -> default
+
+
 # --- report.template_report ---
 
 def test_template_report_has_sections():

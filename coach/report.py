@@ -10,7 +10,7 @@ import os
 
 import requests
 
-from .clips import BASE, load_baked
+from .clips import BASE, _num, load_baked
 
 logger = logging.getLogger(__name__)
 
@@ -47,16 +47,6 @@ def get_cards(clip_id: str) -> tuple[str, list[dict], dict | None]:
         return data["title"], data["events"], data.get("cv_context")
     title = clip_id.replace("_", " ")
     return title, _persisted_cards(clip_id), None
-
-
-def _num(v, default=0.0):
-    """Coerce to float for sort keys / :.1f formats; LLM cards sometimes emit numbers as strings."""
-    if isinstance(v, (int, float)):
-        return float(v)
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return default
 
 
 def template_report(title: str, cards: list[dict], cv: dict | None) -> str:
