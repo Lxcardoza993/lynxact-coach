@@ -177,12 +177,18 @@ def live_events(clip_id):
                 win_lines.append(line)
                 yield sse("transcript", line)
                 if line["t"] - win_start >= 6.0:
-                    for card in _emit_window_cards(cfg, title, duration, cv, win_start, line["t"], win_lines, emitted_types):
+                    cards = _emit_window_cards(
+                        cfg, title, duration, cv, win_start, line["t"], win_lines, emitted_types
+                    )
+                    for card in cards:
                         report.persist_card(clip_id, card)
                         yield sse("card", card)
                     win_start, win_lines = line["t"], []
             if win_lines:
-                for card in _emit_window_cards(cfg, title, duration, cv, win_start, win_lines[-1]["t"], win_lines, emitted_types):
+                cards = _emit_window_cards(
+                    cfg, title, duration, cv, win_start, win_lines[-1]["t"], win_lines, emitted_types
+                )
+                for card in cards:
                     report.persist_card(clip_id, card)
                     yield sse("card", card)
     except Exception as exc:  # 任意异常 → 报错事件,前端可回退 replay
