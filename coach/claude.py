@@ -13,6 +13,7 @@ D3 待办:Speechmatics 实时转录替换 baked 转录窗口。
 import json
 import os
 import time
+from collections.abc import Iterator
 
 import requests
 
@@ -35,7 +36,7 @@ Rules:
 - If nothing notable happens in the window, output nothing (empty response)."""
 
 
-def _cfg():
+def _cfg() -> dict:
     return {
         "base": os.environ.get("COACH_API_BASE", "http://127.0.0.1:8317/v1"),
         "key": os.environ.get("COACH_API_KEY", ""),
@@ -43,7 +44,7 @@ def _cfg():
     }
 
 
-def _windows(data):
+def _windows(data: dict) -> list[tuple[float, float, list[dict]]]:
     """Split baked transcript into windows ending near each notable beat.
     Groups transcript lines into ~6s buckets so cards trickle like live TV."""
     lines = sorted(data["transcript"], key=lambda x: x["t"])
@@ -58,7 +59,7 @@ def _windows(data):
     return windows
 
 
-def _parse_cards(text):
+def _parse_cards(text: str) -> list[dict]:
     cards = []
     for line in text.splitlines():
         line = line.strip().strip("`")
@@ -73,7 +74,7 @@ def _parse_cards(text):
     return cards
 
 
-def _call_model(cfg, user_prompt):
+def _call_model(cfg: dict, user_prompt: str) -> list[dict]:
     """One non-streaming call; returns parsed cards. Streaming per window adds
     little (windows are the live granularity) and complicates JSON repair."""
     resp = requests.post(
@@ -93,7 +94,7 @@ def _call_model(cfg, user_prompt):
     return _parse_cards(resp.json()["choices"][0]["message"]["content"])
 
 
-def _window_prompt(data, win_start, win_end, win_lines, emitted_types):
+def _window_prompt(data: dict, win_start: float, win_end: float, win_lines: list[dict], emitted_types: set[str]) -> str:
     cv = json.dumps(data.get("cv_context"), ensure_ascii=False)
     transcript = "\n".join(f"[{x['t']:5.1f}s] {x['text']}" for x in win_lines)
     return (
@@ -105,7 +106,16 @@ def _window_prompt(data, win_start, win_end, win_lines, emitted_types):
     )
 
 
-def _emit_window_cards(cfg, data_title, duration, cv, win_start, win_end, win_lines, emitted_types):
+def _emit_window_cards(
+    cfg: dict,
+    data_title: str,
+    duration: float,
+    cv: dict | None,
+    win_start: float,
+    win_end: float,
+    win_lines: list[dict],
+    emitted_types: set[str],
+) -> list[dict]:
     prompt = _window_prompt(
         {"title": data_title, "duration": duration, "cv_context": cv},
         win_start, win_end, win_lines, emitted_types,
@@ -120,7 +130,7 @@ def _emit_window_cards(cfg, data_title, duration, cv, win_start, win_end, win_li
     return cards
 
 
-def live_events(clip_id):
+def live_events(clip_id: str) -> Iterator[str]:
     """Window-by-window live generation; any failure falls back to replay so
     the demo can never die on stage. Baked clip → baked transcript pacing;
     uploaded clip → Speechmatics real-time transcript (D3)."""
