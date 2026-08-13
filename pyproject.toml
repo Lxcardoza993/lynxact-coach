@@ -21,8 +21,11 @@ target-version = "py310"
 
 [tool.ruff.lint]
 # Focused rule set; expanded as issues are fixed round-by-round.
-select = ["E", "F", "W", "I", "UP", "B"]
+select = ["E", "F", "W", "I", "UP", "B", "S"]
 
 [tool.ruff.lint.per-file-ignores]
 # load_dotenv() runs before stdlib/3rd-party imports by design.
-"app.py" = ["E402"]
+# S603: subprocess calls are list-form (no shell) with trusted uuid/env args — reviewed R9.
+"app.py" = ["E402", "S603"]
+# S101: assert is the correct assertion primitive in tests.
+"tests/*" = ["S101", "E402"]
