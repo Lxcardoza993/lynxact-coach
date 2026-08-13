@@ -117,9 +117,9 @@ function start(){
       '<div class="head"><span class="type">' + esc(d.type) + '</span>' +
       '<span class="ts">' + fmt(d.t) + '</span>' +
       '<span class="title"></span>' +
-      '<span class="rating">★ ' + d.rating + '</span></div>' +
+      '<span class="rating">★ ' + esc(d.rating) + '</span></div>' +
       '<div class="an"></div>' +
-      (d.players && d.players.length ? '<div class="players">👤 ' + esc(d.players.join(' · ')) + '</div>' : '') +
+      (Array.isArray(d.players) && d.players.length ? '<div class="players">👤 ' + esc(d.players.join(' · ')) + '</div>' : '') +
       (d.speculative ? '<div class="spec">⚠ speculative — not grounded in CV/transcript</div>' : '');
     div.querySelector('.title').textContent = d.title;
     div.querySelector('.an').textContent = d.analysis;
