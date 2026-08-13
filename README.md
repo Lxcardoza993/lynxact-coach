@@ -25,8 +25,9 @@ full-match report in real time.
 ## 快速开始 / Quickstart
 
 ```bash
-cp .env.example .env      # 默认 replay 模式,零 key 可跑
-python3 app.py            # http://127.0.0.1:6901
+pip install -r requirements.txt  # runtime: flask / python-dotenv / requests / websocket-client
+cp .env.example .env              # 默认 replay 模式,零 key 可跑
+python3 app.py                     # http://127.0.0.1:6901
 ```
 
 - `COACH_MODE=replay`(默认):回放预烘焙数据,断网/无 key 也能完整演示。
