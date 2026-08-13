@@ -252,6 +252,21 @@ def test_chat_tool_crash_does_not_500(monkeypatch):
     assert "crashed" in res["tool_trace"][0]["summary"]
 
 
+def test_chat_model_call_failure_degrades(monkeypatch):
+    # A gateway error (429/500/malformed choices) from _call_tool_model must
+    # degrade to a reply, not raise through /api/agent/chat -> 500.
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+
+    def boom_model(cfg, messages, tools):
+        raise ConnectionError("gateway 503")
+
+    monkeypatch.setattr(agent, "_call_tool_model", boom_model)
+    res = agent.chat("", "analyze this", [])
+    assert "unavailable" in res["reply"].lower()
+    assert res["tool_trace"] == []
+
+
 def test_chat_happy_path_runs_tool_then_replies(monkeypatch):
     """Normal loop: one tool call dispatched, then a final text reply."""
     from coach import claude

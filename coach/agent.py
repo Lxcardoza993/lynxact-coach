@@ -328,7 +328,15 @@ def chat(clip_id: str, message: str, history: list[dict] | None, max_tool_rounds
 
     trace = []
     for _ in range(max_tool_rounds):
-        msg = _call_tool_model(cfg, messages, TOOLS)
+        try:
+            msg = _call_tool_model(cfg, messages, TOOLS)
+        except Exception as exc:
+            # LLM gateway error (429/500/malformed choices[0].message) must degrade
+            # to a reply, not raise through /api/agent/chat -> 500. claude.live_events
+            # defends its model call the same way via the broad live_events try.
+            logger.warning("agent model call failed: %s", exc)
+            reply = "The analysis service is unavailable right now — please retry in a moment."
+            return {"reply": reply, "tool_trace": trace}
         # Model output is external/untrusted: guard malformed tool_calls
         # (missing function/id) so a bad response can't KeyError the loop.
         tcs = []
