@@ -345,6 +345,24 @@ def test_read_technique_parses_card(tmp_path, monkeypatch):
     assert data["key_points"] == ["low body", "explode"]
 
 
+def test_parse_frontmatter_multiline_string_continuation():
+    # A key whose value continues on following non-key, non-list lines is
+    # concatenated — the docstring lists "multi-line continuation values".
+    txt = (
+        "---\n"
+        "name: Body Feint\n"
+        "summary: shift weight\n"
+        " then explode out\n"
+        "common_mistakes:\n"
+        "- leaning back\n"
+        "---\nbody"
+    )
+    data = agent._parse_frontmatter(txt)
+    assert data["name"] == "Body Feint"
+    assert data["summary"] == "shift weight then explode out"
+    assert data["common_mistakes"] == ["leaning back"]
+
+
 def test_read_technique_missing_returns_none(tmp_path, monkeypatch):
     monkeypatch.setattr(agent, "TECH_DIR", str(tmp_path))
     assert agent._read_technique("nope-not-here") is None
