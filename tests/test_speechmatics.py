@@ -128,3 +128,21 @@ def test_stream_wav_survives_close_failure(monkeypatch, tmp_path):
     monkeypatch.setenv("SPEECHMATICS_API_KEY", "k")
     out = list(speechmatics.stream_wav(_wav(tmp_path)))
     assert out == [{"t": 0.0, "text": "Hi."}]
+
+
+def test_stream_wav_skips_malformed_results(monkeypatch, tmp_path):
+    # Remote result shape is untrusted: a result missing content (or with empty
+    # alternatives) must be skipped, not KeyError the reader thread and kill the
+    # whole transcription.
+    mixed = json.dumps({"message": "AddTranscript", "results": [
+        {"start_time": 0.0, "alternatives": [{"content": "Goal"}]},
+        {"start_time": 0.5, "alternatives": [{}]},            # no content -> skip
+        {"start_time": 0.7, "alternatives": []},              # empty -> skip
+        {"start_time": 1.0, "alternatives": [{"content": "scored."}]},
+    ]})
+    ws = _FakeWS([mixed, '{"message":"EndOfTranscript"}'])
+    _inject_ws(monkeypatch, ws)
+    monkeypatch.setenv("SPEECHMATICS_API_KEY", "k")
+    out = list(speechmatics.stream_wav(_wav(tmp_path, 12800)))   # 2 chunks
+    assert out == [{"t": 0.0, "text": "Goal scored."}]
+    assert ws.closed is True

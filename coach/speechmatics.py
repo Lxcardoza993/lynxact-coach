@@ -57,10 +57,13 @@ def stream_wav(wav_path: str, lang: str | None = None) -> Iterator[dict]:
                 msg = json.loads(ws.recv())
                 kind = msg.get("message")
                 if kind == "AddTranscript":
+                    # Remote result shape is untrusted: skip results whose first
+                    # alternative lacks content (or has none) rather than KeyError
+                    # the reader thread and abort the whole transcription.
                     words = [
                         (r.get("start_time", 0), r["alternatives"][0]["content"])
                         for r in msg.get("results", [])
-                        if r.get("alternatives")
+                        if r.get("alternatives") and r["alternatives"][0].get("content")
                     ]
                     if words:
                         finals.put(words)
