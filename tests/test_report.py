@@ -40,11 +40,11 @@ def test_persist_card_accumulates(tmp_path, monkeypatch):
 def test_persisted_cards_skips_bad_json(tmp_path, monkeypatch):
     monkeypatch.setattr(report, "CARDS_DIR", str(tmp_path))
     (tmp_path / "c1.jsonl").write_text(
-        '{"t": 1, "type": "goal"}\n{ broken\n{"t": 2, "type": "save"}\n',
+        '{"t": 1, "type": "goal"}\n\n{ broken\n{"t": 2, "type": "save"}\n',
         encoding="utf-8",
     )
     cards = report._persisted_cards("c1")
-    assert len(cards) == 2            # corrupt middle line skipped
+    assert len(cards) == 2            # blank + corrupt middle lines skipped
 
 
 # --- build_report ---

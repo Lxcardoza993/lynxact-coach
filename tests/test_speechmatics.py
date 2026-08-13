@@ -146,3 +146,37 @@ def test_stream_wav_skips_malformed_results(monkeypatch, tmp_path):
     out = list(speechmatics.stream_wav(_wav(tmp_path, 12800)))   # 2 chunks
     assert out == [{"t": 0.0, "text": "Goal scored."}]
     assert ws.closed is True
+
+
+def test_stream_wav_ignores_unknown_message_kinds(monkeypatch, tmp_path):
+    # The reader must ignore message kinds it doesn't handle (partials/info/etc),
+    # not crash or hang — only AddTranscript/EndOfTranscript/Error are acted on.
+    ws = _FakeWS([
+        '{"message":"PartialTranscript","results":[]}',   # unknown -> ignored
+        _transcript((0.0, "Goal.")),
+        '{"message":"EndOfTranscript"}',
+    ])
+    _inject_ws(monkeypatch, ws)
+    monkeypatch.setenv("SPEECHMATICS_API_KEY", "k")
+    out = list(speechmatics.stream_wav(_wav(tmp_path, 12800)))   # 2 chunks
+    assert out == [{"t": 0.0, "text": "Goal."}]
+    assert ws.closed is True
+
+
+def test_stream_wav_skips_addtranscript_with_no_valid_words(monkeypatch, tmp_path):
+    # An AddTranscript whose every result is malformed (no content) yields an
+    # empty words list -> must be skipped (not queued as an empty batch) and the
+    # reader continues to the next message.
+    ws = _FakeWS([
+        json.dumps({"message": "AddTranscript", "results": [
+            {"start_time": 0.5, "alternatives": [{}]},   # no content
+            {"start_time": 0.7, "alternatives": []},     # empty
+        ]}),
+        _transcript((0.0, "Goal.")),
+        '{"message":"EndOfTranscript"}',
+    ])
+    _inject_ws(monkeypatch, ws)
+    monkeypatch.setenv("SPEECHMATICS_API_KEY", "k")
+    out = list(speechmatics.stream_wav(_wav(tmp_path, 12800)))   # 2 chunks
+    assert out == [{"t": 0.0, "text": "Goal."}]   # all-malformed msg ignored, next one yields
+    assert ws.closed is True
