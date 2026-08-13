@@ -300,3 +300,269 @@ def test_run_tool_analyze_clip_baked_without_transcript(tmp_path, monkeypatch):
     ok, payload = agent._run_tool("analyze_clip", {"clip_id": "c1"})
     assert ok is True
     assert payload["transcript"] == []   # .get default, not KeyError
+
+
+# --- agent._read_technique: file without frontmatter ---
+
+def test_read_technique_file_without_frontmatter(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "TECH_DIR", str(tmp_path))
+    (tmp_path / "plain.md").write_text("just prose, no frontmatter", encoding="utf-8")
+    assert agent._read_technique("plain") is None   # _parse_frontmatter {} -> None
+
+
+# --- agent._parse_frontmatter: continuation branches ---
+
+def test_frontmatter_list_item_reassigns_str_to_list():
+    # a "- item" continuation under a string-valued key resets it to a list
+    txt = "---\nsummary: a string\n- becomes a list\n---\n"
+    assert _parse_frontmatter(txt)["summary"] == ["becomes a list"]
+
+
+def test_frontmatter_plain_continuation_into_list():
+    # a non-dash line under a list key appends as a list item
+    txt = "---\nkey_points:\n- a\nplain continuation\n---\n"
+    assert _parse_frontmatter(txt)["key_points"] == ["a", "plain continuation"]
+
+
+# --- agent._run_tool: remaining branches ---
+
+def test_run_tool_query_technique_found(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "TECH_DIR", str(tmp_path))
+    (tmp_path / "body-feint.md").write_text(
+        "---\nname: Body Feint\ndifficulty: 2\n---\nx", encoding="utf-8")
+    ok, payload = agent._run_tool("query_technique", {"technique": "body-feint"})
+    assert ok is True
+    assert payload["name"] == "Body Feint"
+
+
+def test_run_tool_query_technique_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "TECH_DIR", str(tmp_path))
+    ok, payload = agent._run_tool("query_technique", {"technique": "nope"})
+    assert ok is False
+    assert "not in knowledge base" in payload["error"]
+
+
+def test_run_tool_list_players(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "TECH_DIR", str(tmp_path))
+    (tmp_path / "elastico.md").write_text(
+        "---\nname: Elastico\nrepresentative_players:\n- Messi\n- Ronaldo\n---\nx",
+        encoding="utf-8")
+    ok, payload = agent._run_tool("list_players", {"technique": "elastico"})
+    assert ok is True
+    assert payload["players"] == ["Messi", "Ronaldo"]
+
+
+def test_run_tool_unknown_tool():
+    ok, payload = agent._run_tool("nope", {})
+    assert ok is False
+    assert "unknown tool" in payload["error"]
+
+
+# --- agent._jsonl_call + _call_tool_model (mocked requests) ---
+
+class _FakeLLMResp:
+    def __init__(self, content, fail=False):
+        self._content, self._fail = content, fail
+
+    def raise_for_status(self):
+        if self._fail:
+            import requests
+            raise requests.HTTPError("upstream 503")
+
+    def json(self):
+        return {"choices": [{"message": {"content": self._content}}]}
+
+
+def _patch_post(monkeypatch, content, *, fail=False):
+    import requests
+    captured = {}
+
+    def fake_post(url, *, headers=None, json=None, timeout=None):
+        captured.update(url=url, headers=headers, json=json, timeout=timeout)
+        return _FakeLLMResp(content, fail=fail)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    return captured
+
+
+def test_jsonl_call_parses_object_lines(monkeypatch):
+    cap = _patch_post(monkeypatch, '{"day":1,"drill":"cone"}\nnoise\n{"day":2,"drill":"gate"}')
+    rows = agent._jsonl_call({"base": "x", "key": "k", "model": "m"}, "prompt")
+    assert len(rows) == 2
+    assert rows[0]["drill"] == "cone"
+    assert cap["timeout"] == 90
+
+
+def test_call_tool_model_returns_message(monkeypatch):
+    _patch_post(monkeypatch, "hi")        # model message content is a plain string
+    msg = agent._call_tool_model(
+        {"base": "x", "key": "k", "model": "m"},
+        [{"role": "user", "content": "q"}], agent.TOOLS)
+    assert msg["content"] == "hi"
+
+
+def test_run_tool_training_plan_happy(monkeypatch):
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    monkeypatch.setattr(agent, "TECH_DIR", "/nonexistent")   # _read_technique -> None
+    _patch_post(monkeypatch,
+                '{"day":1,"drill":"cone","focus":"speed"}\n{"day":2,"drill":"gate","focus":"turn"}')
+    ok, payload = agent._run_tool(
+        "generate_training_plan", {"technique": "x", "weaknesses": "slow", "days": 2})
+    assert ok is True
+    assert len(payload) == 2
+
+
+def test_run_tool_training_plan_model_error(monkeypatch):
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    monkeypatch.setattr(agent, "TECH_DIR", "/nonexistent")
+    _patch_post(monkeypatch, "", fail=True)
+    ok, payload = agent._run_tool(
+        "generate_training_plan", {"technique": "x", "weaknesses": "y"})
+    assert ok is False
+    assert "plan generation failed" in payload["error"]
+
+
+# --- agent.chat: clip-context injection + edge branches ---
+
+def test_chat_injects_baked_clip_context(monkeypatch):
+    from coach import claude, clips
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    monkeypatch.setattr(clips, "load_baked",
+                        lambda cid: {"title": "Goal", "duration": 90, "cv_context": {"fusion_label": "vote"}})
+    seen = {}
+
+    def fake_model(cfg, messages, tools):
+        seen["messages"] = messages
+        return {"content": "ok", "tool_calls": []}
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    agent.chat("clip1", "hi", [])
+    assert any(m.get("content", "").startswith("Current clip: Goal") for m in seen["messages"])
+
+
+def test_chat_injects_uploaded_clip_context(monkeypatch):
+    from coach import claude, clips
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    monkeypatch.setattr(clips, "load_baked", lambda cid: None)
+    monkeypatch.setattr(clips, "get_upload", lambda cid: {"title": "Upload", "duration": 5})
+    seen = {}
+
+    def fake_model(cfg, messages, tools):
+        seen["messages"] = messages
+        return {"content": "ok", "tool_calls": []}
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    agent.chat("up1", "hi", [])
+    assert any("Current clip: Upload" in m.get("content", "") for m in seen["messages"])
+
+
+def test_chat_malformed_tool_arguments_falls_back_to_empty(monkeypatch):
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    n = {"i": 0}
+
+    def fake_model(cfg, messages, tools):
+        n["i"] += 1
+        if n["i"] == 1:
+            return {"content": None, "tool_calls": [
+                {"id": "t1", "function": {"name": "query_technique", "arguments": "not json{"}}]}
+        return {"content": "ok", "tool_calls": []}
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    monkeypatch.setattr(agent, "_run_tool", lambda name, args: (True, {"name": name}))
+    res = agent.chat("", "q", [])
+    assert res["tool_trace"][0]["args"] == {}   # malformed arguments -> {} fallback
+
+
+def test_chat_exhausts_rounds_falls_back_message(monkeypatch):
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    n = {"i": 0}
+
+    def fake_model(cfg, messages, tools):
+        n["i"] += 1
+        return {"content": "thinking", "tool_calls": [
+            {"id": str(n["i"]), "function": {"name": "query_technique",
+                                              "arguments": '{"technique":"x"}'}}]}
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    monkeypatch.setattr(agent, "_run_tool", lambda name, args: (True, {"name": "x"}))
+    res = agent.chat("", "q", [], max_tool_rounds=2)
+    assert "could not finish" in res["reply"]
+    assert len(res["tool_trace"]) == 2
+
+
+# --- agent edges: remaining branches ---
+
+def test_jsonl_call_skips_invalid_object_line(monkeypatch):
+    _patch_post(monkeypatch, '{"day":1,"drill":"cone"}\n{ broken\n{"day":2,"drill":"gate"}')
+    rows = agent._jsonl_call({"base": "x", "key": "k", "model": "m"}, "p")
+    assert len(rows) == 2                     # { broken skipped, not crash
+
+
+def test_run_tool_analyze_clip_uploaded_path(monkeypatch):
+    from coach import clips
+    monkeypatch.setattr(clips, "load_baked", lambda cid: None)        # not baked
+    monkeypatch.setattr(clips, "get_upload", lambda cid: {"title": "Up", "duration": 5})
+    monkeypatch.setattr(agent, "_clip_cards", lambda cid: [{"t": 1}])
+    ok, payload = agent._run_tool("analyze_clip", {"clip_id": "up1"})
+    assert ok is True
+    assert payload["title"] == "Up"
+    assert payload["event_cards"] == [{"t": 1}]
+    assert "note" in payload
+
+
+def test_run_tool_analyze_clip_not_found(monkeypatch):
+    from coach import clips
+    monkeypatch.setattr(clips, "load_baked", lambda cid: None)
+    monkeypatch.setattr(clips, "get_upload", lambda cid: None)
+    ok, payload = agent._run_tool("analyze_clip", {"clip_id": "ghost"})
+    assert ok is False
+    assert "not found" in payload["error"]
+
+
+def test_run_tool_list_players_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "TECH_DIR", str(tmp_path))
+    ok, payload = agent._run_tool("list_players", {"technique": "nope"})
+    assert ok is False
+    assert "technique not found" in payload["error"]
+
+
+def test_run_tool_training_plan_retries_on_empty(monkeypatch):
+    import requests
+
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    monkeypatch.setattr(agent, "TECH_DIR", "/nonexistent")
+    state = {"n": 0}
+
+    def fake_post(url, *, headers=None, json=None, timeout=None):
+        state["n"] += 1
+        if state["n"] == 1:
+            return _FakeLLMResp("no json lines here")          # rows=[] -> retry
+        return _FakeLLMResp('{"day":1,"drill":"cone"}')        # retry succeeds
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    ok, payload = agent._run_tool(
+        "generate_training_plan", {"technique": "x", "weaknesses": "y"})
+    assert ok is True
+    assert state["n"] == 2                    # retried once on empty
+    assert len(payload) == 1
+
+
+def test_chat_passes_history_context(monkeypatch):
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    seen = {}
+
+    def fake_model(cfg, messages, tools):
+        seen["messages"] = messages
+        return {"content": "ok", "tool_calls": []}
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    agent.chat("", "now", [{"role": "user", "content": "before"},
+                           {"role": "assistant", "content": "hi"}])
+    roles = [m["role"] for m in seen["messages"]]
+    assert "assistant" in roles               # history injected into messages
