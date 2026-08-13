@@ -57,3 +57,8 @@ SPDX-License-Identifier: Apache-2.0
 
 Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE) for the
 full text. SPDX-License-Identifier: Apache-2.0
+
+## 贡献 / Contributing
+
+开发环境、测试 / lint / 安全扫描命令与代码风格见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+Dev setup, test / lint / security-scan commands, and code style: see [CONTRIBUTING.md](CONTRIBUTING.md).
