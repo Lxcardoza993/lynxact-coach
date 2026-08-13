@@ -5,6 +5,7 @@ that has no external (CPA / Speechmatics / ffmpeg) dependencies, so they
 stay fast and hermetic. They also pin down current behavior so later
 refactors can't silently change it.
 """
+from coach import agent
 from coach.agent import _parse_frontmatter, _summarize
 from coach.claude import _parse_cards, _windows
 from coach.report import template_report
@@ -152,3 +153,26 @@ def test_template_report_top_moments_only_high_rating():
     md = template_report("M", cards, None)
     assert "## Top moments" in md
     assert "Top" in md  # rating 10 -> top moment
+
+
+# --- agent._read_technique ---
+
+def test_read_technique_parses_card(tmp_path, monkeypatch):
+    card = tmp_path / "body-feint.md"
+    card.write_text(
+        "---\nname: Body Feint\ncategory: feint\ndifficulty: 2\n"
+        "summary: shift weight\nkey_points:\n- low body\n- explode\n---\nbody",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(agent, "TECH_DIR", str(tmp_path))
+    data = agent._read_technique("body-feint")
+    assert data is not None
+    assert data["slug"] == "body-feint"
+    assert data["name"] == "Body Feint"
+    assert data["difficulty"] == "2"
+    assert data["key_points"] == ["low body", "explode"]
+
+
+def test_read_technique_missing_returns_none(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "TECH_DIR", str(tmp_path))
+    assert agent._read_technique("nope-not-here") is None

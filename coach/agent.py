@@ -136,7 +136,9 @@ def _read_technique(slug):
     p = os.path.join(TECH_DIR, f"{slug}.md")
     if not os.path.isfile(p):
         return None
-    data = _parse_frontmatter(open(p, encoding="utf-8").read())
+    with open(p, encoding="utf-8") as f:
+        txt = f.read()
+    data = _parse_frontmatter(txt)
     if not data:
         return None
     return {
