@@ -143,3 +143,44 @@ def test_get_clip_missing_returns_none(tmp_path, monkeypatch):
     monkeypatch.setattr(clips, "UPLOAD_DIR", str(tmp_path / "uploads"))
     monkeypatch.setattr(clips, "AUDIO_DIR", str(tmp_path / "audio"))
     assert clips.get_clip("nope") is None
+
+
+# --- register_upload ---
+
+def test_register_upload_moves_and_records(tmp_path, monkeypatch):
+    monkeypatch.setattr(clips, "TMP_DIR", str(tmp_path))
+    monkeypatch.setattr(clips, "UPLOAD_DIR", str(tmp_path / "uploads"))
+    monkeypatch.setattr(clips, "UPLOADS_REG", str(tmp_path / "uploads.json"))
+    src = tmp_path / "raw.mp4"
+    src.write_bytes(b"fake-mp4")
+    clip_id = clips.register_upload(str(src), "My Goal Clip.mp4", 12.5)
+    assert clip_id.startswith("my-goal-clip")          # slug from orig name
+    # source file moved into UPLOAD_DIR
+    assert (tmp_path / "uploads" / (clip_id + ".mp4")).exists()
+    assert not src.exists()
+    # registry records title + duration
+    reg = clips._reg()
+    assert reg[clip_id]["title"] == "My Goal Clip.mp4"
+    assert reg[clip_id]["duration"] == 12.5
+
+
+# --- list_clips ---
+
+def test_list_clips_merges_uploads_and_vault(tmp_path, monkeypatch):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    monkeypatch.setattr(clips, "TMP_DIR", str(tmp_path))
+    monkeypatch.setattr(clips, "UPLOADS_REG", str(tmp_path / "uploads.json"))
+    monkeypatch.setattr(clips, "UPLOAD_DIR", str(tmp_path / "uploads"))
+    monkeypatch.setattr(clips, "AUDIO_DIR", str(tmp_path / "audio"))
+    monkeypatch.setattr(clips, "VAULT_ROOT", str(vault))
+    monkeypatch.setattr(clips, "BAKED_DIR", str(tmp_path / "baked"))
+    src = tmp_path / "u.mp4"
+    src.write_bytes(b"x")
+    up_id = clips.register_upload(str(src), "Upload.mp4", 5)
+    (vault / "stepover_lionel-messi_2015.mp4").write_bytes(b"x")
+    result = clips.list_clips()
+    ids = [c["id"] for c in result]
+    assert up_id in ids
+    assert "stepover_lionel-messi_2015" in ids
+    assert result[0]["source"] == "upload"     # uploads sort before vault
