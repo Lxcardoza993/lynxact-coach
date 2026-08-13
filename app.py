@@ -24,7 +24,7 @@ app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024  # 300MB 上传上限
 logger = logging.getLogger(__name__)
 
 
-def _err_page(code, msg):
+def _err_page(code: int, msg: str) -> tuple[str, int]:
     return (
         "<!doctype html><html><head><meta charset='utf-8'><title>LynxAct Coach</title>"
         "<style>body{background:#0d1117;color:#e6edf3;font:15px sans-serif;display:flex;"
@@ -36,22 +36,22 @@ def _err_page(code, msg):
 
 
 @app.errorhandler(404)
-def not_found(_):
+def not_found(_: Exception) -> tuple[str, int]:
     return _err_page(404, "clip or page not found")
 
 
 @app.errorhandler(413)
-def too_large(_):
+def too_large(_: Exception) -> tuple[str, int]:
     return _err_page(413, "file too large — 300MB max")
 
 
 @app.route("/")
-def index():
+def index() -> str:
     return render_template("index.html", clips=list_clips(), err=request.args.get("err"))
 
 
 @app.route("/coach/<clip_id>")
-def coach_view(clip_id):
+def coach_view(clip_id: str) -> str:
     clip = get_clip(clip_id)
     if not clip:
         abort(404)
@@ -59,13 +59,13 @@ def coach_view(clip_id):
 
 
 @app.route("/video/<path:fname>")
-def video(fname):
+def video(fname: str) -> Response:
     clip_id = fname.rsplit(".", 1)[0]
     return range_stream(fname, video_dir(clip_id))
 
 
 @app.route("/api/report/<clip_id>")
-def api_report(clip_id):
+def api_report(clip_id: str) -> Response:
     if not get_clip(clip_id):
         abort(404)
     mode = request.args.get("mode") or os.environ.get("COACH_MODE", "replay")
@@ -76,7 +76,7 @@ def api_report(clip_id):
 
 
 @app.route("/api/upload", methods=["POST"])
-def api_upload():
+def api_upload() -> Response:
     f = request.files.get("file")
     if not f or not f.filename:
         return redirect("/?err=no+file+selected")
@@ -113,7 +113,7 @@ def api_upload():
 
 
 @app.route("/api/stream/<clip_id>")
-def api_stream(clip_id):
+def api_stream(clip_id: str) -> Response:
     if not get_clip(clip_id):
         abort(404)
     # ?mode=live|replay 可覆盖环境变量,演示时一个服务两种模式
@@ -126,7 +126,7 @@ def api_stream(clip_id):
 
 
 @app.route("/api/agent/chat", methods=["POST"])
-def api_agent_chat():
+def api_agent_chat() -> Response:
     """教练对话 Agent:多轮追问 + 工具调用闭环(GOAI Track 2 形态)。"""
     d = request.get_json(force=True) or {}
     clip_id = d.get("clip_id") or ""
@@ -138,7 +138,7 @@ def api_agent_chat():
 
 
 @app.route("/api/health")
-def health():
+def health() -> Response:
     return jsonify(ok=True, mode=os.environ.get("COACH_MODE", "replay"))
 
 
