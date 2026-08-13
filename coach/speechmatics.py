@@ -70,6 +70,10 @@ def stream_wav(wav_path, lang=None):
                     finals.put(RuntimeError(str(msg)))
                     return
         except Exception as exc:
+            # Preserve the reader-thread traceback in the logs: the exception
+            # is re-raised from the main thread below (raise pending), which
+            # loses this frame. logger.exception captures the full stack here.
+            logger.exception("speechmatics reader thread failed")
             finals.put(exc)
 
     threading.Thread(target=reader, daemon=True).start()
@@ -98,7 +102,7 @@ def stream_wav(wav_path, lang=None):
                             buf_start = t
                         buf.append(w)
                     # 句读:词间隔大或结尾标点 → 出一句
-                    if buf and (buf[-1].endswith((".", "?", "!", "。", "?", "!")) or len(buf) >= 25):
+                    if buf and (buf[-1].endswith((".", "?", "!", "。")) or len(buf) >= 25):
                         yield {"t": buf_start or 0.0, "text": " ".join(buf)}
                         buf, buf_start = [], None
         ws.send(json.dumps({"message": "EndOfStream", "last_seq_no": 0}))
