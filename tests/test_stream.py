@@ -67,6 +67,18 @@ def test_replay_events_zero_speed_falls_back_to_1(monkeypatch):
     assert _kind(frames[-1]) == "done"
 
 
+def test_replay_events_non_numeric_speed_falls_back(monkeypatch):
+    # A non-numeric REPLAY_SPEED (operator typo like "fast") must fall back to
+    # 1.0, not raise ValueError and crash the "demo that can never die on
+    # stage" — the `or 1.0` guard already handles 0; the non-numeric case was
+    # the gap (float() raises before the `or` is evaluated).
+    monkeypatch.setattr(stream, "load_baked", lambda cid: _BAKED)
+    monkeypatch.setattr(stream.time, "sleep", lambda s: None)
+    monkeypatch.setenv("REPLAY_SPEED", "fast")
+    frames = list(stream.replay_events("c1"))   # must not raise
+    assert _kind(frames[-1]) == "done"
+
+
 # --- sse_stream (dispatch) ---
 
 def test_sse_stream_default_replay_mode(monkeypatch):

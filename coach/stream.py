@@ -24,7 +24,13 @@ def replay_events(clip_id: str) -> Iterator[str]:
     data = load_baked(clip_id)
     if data is None:
         return
-    speed = float(os.environ.get("REPLAY_SPEED", "2.0")) or 1.0
+    try:
+        speed = float(os.environ.get("REPLAY_SPEED", "2.0")) or 1.0
+    except ValueError:
+        # A non-numeric REPLAY_SPEED (operator typo) degrades to 1.0 rather
+        # than raising — float() raises before the `or 1.0` guard runs. The
+        # docstring promises a demo that "can never die on stage".
+        speed = 1.0
     yield sse("meta", {
         "clip": data["clip"],
         "title": data["title"],
