@@ -17,6 +17,7 @@ import os
 import queue
 import threading
 import time
+from collections.abc import Iterator
 
 RT_URL = "wss://eu2.rt.speechmatics.com/v2"
 CHUNK_MS = 200  # 每帧音频时长,控制推送节奏≈真实语速
@@ -24,7 +25,7 @@ CHUNK_MS = 200  # 每帧音频时长,控制推送节奏≈真实语速
 logger = logging.getLogger(__name__)
 
 
-def stream_wav(wav_path, lang=None):
+def stream_wav(wav_path: str, lang: str | None = None) -> Iterator[dict]:
     """Yield {"t": start_seconds, "text": sentence} as finals arrive."""
     import websocket  # websocket-client,延迟 import,无 key 场景不硬依赖
 

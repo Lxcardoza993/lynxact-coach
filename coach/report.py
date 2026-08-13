@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 CARDS_DIR = os.path.join(BASE, "data", "tmp", "cards")
 
 
-def persist_card(clip_id, card):
+def persist_card(clip_id: str, card: dict) -> None:
     os.makedirs(CARDS_DIR, exist_ok=True)
     with open(os.path.join(CARDS_DIR, clip_id + ".jsonl"), "a", encoding="utf-8") as f:
         f.write(json.dumps(card, ensure_ascii=False) + "\n")
 
 
-def _persisted_cards(clip_id):
+def _persisted_cards(clip_id: str) -> list[dict]:
     path = os.path.join(CARDS_DIR, clip_id + ".jsonl")
     if not os.path.exists(path):
         return []
@@ -39,7 +39,7 @@ def _persisted_cards(clip_id):
     return cards
 
 
-def get_cards(clip_id):
+def get_cards(clip_id: str) -> tuple[str, list[dict], dict | None]:
     data = load_baked(clip_id)
     if data:
         return data["title"], data["events"], data.get("cv_context")
@@ -47,7 +47,7 @@ def get_cards(clip_id):
     return title, _persisted_cards(clip_id), None
 
 
-def template_report(title, cards, cv):
+def template_report(title: str, cards: list[dict], cv: dict | None) -> str:
     """零模型模板报告:时间线 + 高光时刻 + 类型分布 + 教练要点。"""
     lines = [f"# Tactical Report — {title}", ""]
     if cv:
@@ -83,7 +83,7 @@ def template_report(title, cards, cv):
     return "\n".join(lines)
 
 
-def model_report(cfg, title, cards, cv):
+def model_report(cfg: dict, title: str, cards: list[dict], cv: dict | None) -> str:
     prompt = (
         "You are LynxAct Coach. Turn these tactical event cards into a concise "
         "full-match markdown report: summary paragraph, event timeline, top 3 "
@@ -106,7 +106,7 @@ def model_report(cfg, title, cards, cv):
     return resp.json()["choices"][0]["message"]["content"]
 
 
-def build_report(clip_id, mode, cfg):
+def build_report(clip_id: str, mode: str, cfg: dict) -> dict | None:
     title, cards, cv = get_cards(clip_id)
     if not cards:
         return None
