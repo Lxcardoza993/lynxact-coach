@@ -37,6 +37,7 @@ Rules:
 
 
 def _cfg() -> dict:
+    """Read the LLM gateway config (base/key/model) from env."""
     return {
         "base": os.environ.get("COACH_API_BASE", "http://127.0.0.1:8317/v1"),
         "key": os.environ.get("COACH_API_KEY", ""),
@@ -60,6 +61,7 @@ def _windows(data: dict) -> list[tuple[float, float, list[dict]]]:
 
 
 def _parse_cards(text: str) -> list[dict]:
+    """Parse STRICT JSON Lines into event-card dicts; skip non-card lines."""
     cards = []
     for line in text.splitlines():
         line = line.strip().strip("`")
@@ -95,6 +97,7 @@ def _call_model(cfg: dict, user_prompt: str) -> list[dict]:
 
 
 def _window_prompt(data: dict, win_start: float, win_end: float, win_lines: list[dict], emitted_types: set[str]) -> str:
+    """Build the per-window LLM prompt grounding cards in transcript + cv_context."""
     cv = json.dumps(data.get("cv_context"), ensure_ascii=False)
     transcript = "\n".join(f"[{x['t']:5.1f}s] {x['text']}" for x in win_lines)
     return (
@@ -116,6 +119,7 @@ def _emit_window_cards(
     win_lines: list[dict],
     emitted_types: set[str],
 ) -> list[dict]:
+    """Generate event cards for one transcript window; retry once if the window yields none."""
     prompt = _window_prompt(
         {"title": data_title, "duration": duration, "cv_context": cv},
         win_start, win_end, win_lines, emitted_types,

@@ -8,6 +8,7 @@ CHUNK = 1 << 16  # 64 KiB
 
 
 def range_stream(fname: str, base_dir: str) -> Response:
+    """Stream an mp4 from base_dir with HTTP Range support (RFC 7233 suffix ranges)."""
     path = os.path.join(base_dir, os.path.basename(fname))
     if not os.path.exists(path):
         abort(404)

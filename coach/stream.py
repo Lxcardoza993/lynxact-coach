@@ -15,10 +15,12 @@ from .clips import load_baked
 
 
 def sse(kind: str, payload: dict) -> str:
+    """Format a Server-Sent Event string for the given kind + payload."""
     return f"event: {kind}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
 def replay_events(clip_id: str) -> Iterator[str]:
+    """Replay baked transcript lines + event cards as SSE, paced by REPLAY_SPEED."""
     data = load_baked(clip_id)
     if data is None:
         return
@@ -43,6 +45,7 @@ def replay_events(clip_id: str) -> Iterator[str]:
 
 
 def sse_stream(clip_id: str, mode: str | None = None) -> Iterator[str]:
+    """SSE timeline — live (claude) or replay mode, per COACH_MODE."""
     mode = mode or os.environ.get("COACH_MODE", "replay")
     if mode == "live":
         from . import claude
