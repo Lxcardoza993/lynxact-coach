@@ -56,6 +56,29 @@ def test_reg_missing_returns_empty(tmp_path, monkeypatch):
     assert clips._reg() == {}
 
 
+def test_reg_corrupt_json_returns_empty(tmp_path, monkeypatch):
+    monkeypatch.setattr(clips, "UPLOADS_REG", str(tmp_path / "uploads.json"))
+    (tmp_path / "uploads.json").write_text("{ broken", encoding="utf-8")
+    assert clips._reg() == {}
+
+
+def test_reg_non_dict_returns_empty(tmp_path, monkeypatch):
+    # A registry serialized as a JSON list (corruption) must not leak through
+    # as a list — later reg[id] = ... would raise TypeError.
+    monkeypatch.setattr(clips, "UPLOADS_REG", str(tmp_path / "uploads.json"))
+    (tmp_path / "uploads.json").write_text('["not", "a", "dict"]', encoding="utf-8")
+    assert clips._reg() == {}
+
+
+def test_save_reg_no_tmp_left(tmp_path, monkeypatch):
+    # Atomic write (temp + os.replace) must leave no orphan .tmp behind.
+    monkeypatch.setattr(clips, "TMP_DIR", str(tmp_path))
+    monkeypatch.setattr(clips, "UPLOADS_REG", str(tmp_path / "uploads.json"))
+    clips._save_reg({"a": 1})
+    assert not (tmp_path / "uploads.json.tmp").exists()
+    assert clips._reg() == {"a": 1}
+
+
 # --- get_upload ---
 
 def test_get_upload_existing(tmp_path, monkeypatch):

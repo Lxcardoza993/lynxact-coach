@@ -41,15 +41,18 @@ def _reg():
         return {}
     try:
         with open(UPLOADS_REG, encoding="utf-8") as f:
-            return json.load(f)
+            reg = json.load(f)
     except (json.JSONDecodeError, OSError):
         return {}
+    return reg if isinstance(reg, dict) else {}
 
 
 def _save_reg(reg):
     os.makedirs(TMP_DIR, exist_ok=True)
-    with open(UPLOADS_REG, "w", encoding="utf-8") as f:
+    tmp = UPLOADS_REG + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(reg, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, UPLOADS_REG)
 
 
 def register_upload(src_path, orig_name, duration):
@@ -85,9 +88,8 @@ def get_upload(clip_id):
 def get_clip(clip_id):
     up = get_upload(clip_id)
     if up:
-        up.update({"technique": None, "player": None, "year": None,
-                   "baked": False, "cv_context": None})
-        return up
+        return {**up, "technique": None, "player": None, "year": None,
+                "baked": False, "cv_context": None}
     path = os.path.join(VAULT_ROOT, clip_id + ".mp4")
     if not os.path.exists(path):
         return None
