@@ -40,12 +40,21 @@ def parse_stem(stem: str) -> tuple[str, str, str]:
 
 
 def load_baked(clip_id: str) -> dict | None:
-    """Load the pre-baked analysis JSON for clip_id, or None if absent."""
+    """Load the pre-baked analysis JSON for clip_id, or None if absent/corrupt.
+
+    A baked file that fails to parse (truncated pull, disk corruption) or isn't
+    a JSON object degrades to None — clip shown as unbaked — rather than raising
+    through get_clip -> list_clips and 500-ing the clip index. Mirrors _reg.
+    """
     path = os.path.join(BAKED_DIR, os.path.basename(clip_id) + ".json")
     if not os.path.exists(path):
         return None
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+    return data if isinstance(data, dict) else None
 
 
 def _reg() -> dict:
@@ -92,7 +101,7 @@ def get_upload(clip_id: str) -> dict | None:
     return {
         "id": clip_id,
         "file": clip_id + ".mp4",
-        "title": entry["title"],
+        "title": entry.get("title", clip_id),
         "duration": entry.get("duration"),
         "audio_wav": audio if os.path.exists(audio) else None,
         "source": "upload",
