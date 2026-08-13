@@ -142,6 +142,17 @@ def test_parse_cards_coerces_string_t_rating():
     assert cards[1]["rating"] == 0.0  # "excellent" unparseable -> default
 
 
+def test_parse_cards_drops_null_t():
+    # A null t is treated as omitted (dropped) so _emit_window_cards'
+    # setdefault(win_end) fires — instead of coercing None -> 0.0 and pinning
+    # the card to the start of the clip. Null rating -> 0.0 (unrated, no setdefault).
+    text = '{"t": null, "type": "goal", "analysis": "x", "rating": null}'
+    cards = _parse_cards(text)
+    assert len(cards) == 1
+    assert "t" not in cards[0]          # null t dropped -> setdefault would fire
+    assert cards[0]["rating"] == 0.0    # null rating -> 0.0 (unrated)
+
+
 # --- report.template_report ---
 
 def test_template_report_has_sections():
