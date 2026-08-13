@@ -12,6 +12,7 @@
   → 结束发 EndOfStream → 收 EndOfTranscript。
 """
 import json
+import logging
 import os
 import queue
 import threading
@@ -19,6 +20,8 @@ import time
 
 RT_URL = "wss://eu2.rt.speechmatics.com/v2"
 CHUNK_MS = 200  # 每帧音频时长,控制推送节奏≈真实语速
+
+logger = logging.getLogger(__name__)
 
 
 def stream_wav(wav_path, lang=None):
@@ -102,8 +105,8 @@ def stream_wav(wav_path, lang=None):
     finally:
         try:
             ws.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("ws.close failed: %s", exc)
     if buf:
         yield {"t": buf_start or 0.0, "text": " ".join(buf)}
     if isinstance(pending, Exception):

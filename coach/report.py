@@ -5,11 +5,14 @@ live:一次模型调用,把事件卡聚合成 markdown 战术报告。
 卡片来源:baked events 优先;否则读 live 运行持久化的 jsonl。
 """
 import json
+import logging
 import os
 
 import requests
 
 from .clips import BASE, load_baked
+
+logger = logging.getLogger(__name__)
 
 CARDS_DIR = os.path.join(BASE, "data", "tmp", "cards")
 
@@ -110,6 +113,6 @@ def build_report(clip_id, mode, cfg):
     if mode == "live" and cfg.get("key"):
         try:
             return {"markdown": model_report(cfg, title, cards, cv), "generated_by": cfg["model"]}
-        except Exception:
-            pass  # 模型挂了 → 模板兜底
+        except Exception as exc:
+            logger.warning("model report failed for %s, falling back to template: %s", clip_id, exc)
     return {"markdown": template_report(title, cards, cv), "generated_by": "template"}
