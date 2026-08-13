@@ -103,6 +103,17 @@ def test_get_upload_missing_returns_none(tmp_path, monkeypatch):
     assert clips.get_upload("nope") is None
 
 
+def test_get_upload_entry_but_file_missing(tmp_path, monkeypatch):
+    # Registry entry exists but the mp4 is gone (out-of-sync registry) —
+    # get_upload returns None via the path-check branch rather than a
+    # dict pointing at a non-existent file.
+    monkeypatch.setattr(clips, "UPLOADS_REG", str(tmp_path / "uploads.json"))
+    monkeypatch.setattr(clips, "UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(clips, "AUDIO_DIR", str(tmp_path))
+    clips._save_reg({"clip-1": {"title": "Goal.mp4", "duration": 5}})
+    assert clips.get_upload("clip-1") is None
+
+
 # --- get_clip ---
 
 def test_get_clip_upload_source(tmp_path, monkeypatch):
