@@ -191,6 +191,32 @@ def test_chat_skips_malformed_tool_calls(monkeypatch):
     assert res["tool_trace"][0]["tool"] == "list_players"
 
 
+def test_chat_happy_path_runs_tool_then_replies(monkeypatch):
+    """Normal loop: one tool call dispatched, then a final text reply."""
+    from coach import claude
+    monkeypatch.setattr(claude, "_cfg", lambda: {"base": "x", "key": "k", "model": "m"})
+    calls = {"n": 0}
+
+    def fake_model(cfg, messages, tools):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {"content": "let me check", "tool_calls": [
+                {"id": "t1", "function": {"name": "query_technique",
+                                           "arguments": '{"technique":"stepover"}'}}]}
+        return {"content": "final answer", "tool_calls": []}
+
+    monkeypatch.setattr(agent, "_call_tool_model", fake_model)
+    monkeypatch.setattr(
+        agent, "_run_tool",
+        lambda name, args: (True, {"name": "stepover", "difficulty": 2, "key_points": ["a", "b"]}),
+    )
+    res = agent.chat("", "how to stepover?", [])
+    assert res["reply"] == "final answer"
+    assert len(res["tool_trace"]) == 1
+    assert res["tool_trace"][0]["tool"] == "query_technique"
+    assert res["tool_trace"][0]["ok"] is True
+
+
 def test_template_report_top_moments_only_high_rating():
     cards = [
         {"t": 1, "type": "goal", "title": "Top", "rating": 10, "analysis": "x"},
