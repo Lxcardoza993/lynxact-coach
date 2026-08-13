@@ -3,6 +3,8 @@
 Hermetic: monkeypatches CARDS_DIR + load_baked + model_report so no real
 baked data, CPA model call, or shared filesystem state is touched.
 """
+import pytest
+
 from coach import report
 
 
@@ -84,3 +86,70 @@ def test_build_report_live_uses_model_when_ok(tmp_path, monkeypatch):
     res = report.build_report("c1", "live", {"key": "k", "model": "m", "base": "x"})
     assert res["generated_by"] == "m"
     assert res["markdown"] == "MODEL MD"
+
+
+# --- get_cards (baked path) ---
+
+def test_get_cards_uses_baked_events_when_present(monkeypatch):
+    baked = {"title": "Final", "events": [_card()], "cv_context": {"fusion_label": "vote"}}
+    monkeypatch.setattr(report, "load_baked", lambda cid: baked)
+    title, cards, cv = report.get_cards("any")
+    assert title == "Final"
+    assert cards == [_card()]
+    assert cv == {"fusion_label": "vote"}
+
+
+# --- model_report (real body, mocked HTTP) ---
+
+class _FakeResp:
+    def __init__(self, payload, status=200):
+        self._payload, self.status_code = payload, status
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise report.requests.HTTPError(f"status {self.status_code}")
+
+    def json(self):
+        return self._payload
+
+
+def test_model_report_posts_and_returns_content(monkeypatch):
+    captured = {}
+
+    def fake_post(url, *, headers=None, json=None, timeout=None):
+        captured.update(url=url, headers=headers, json=json, timeout=timeout)
+        return _FakeResp({"choices": [{"message": {"content": "## Mock Report"}}]})
+
+    monkeypatch.setattr(report.requests, "post", fake_post)
+    cfg = {"base": "https://api.example.com", "key": "sk-test", "model": "gpt-x"}
+    out = report.model_report(cfg, "My Clip", [{"t": 1, "title": "shot"}], {"fusion_label": "vote"})
+    assert out == "## Mock Report"
+    assert captured["url"] == "https://api.example.com/chat/completions"
+    assert captured["headers"] == {"Authorization": "Bearer sk-test"}
+    assert captured["json"]["model"] == "gpt-x"
+    assert captured["json"]["temperature"] == 0.4
+    assert captured["json"]["messages"][0]["role"] == "user"
+    prompt = captured["json"]["messages"][0]["content"]
+    assert "My Clip" in prompt and "shot" in prompt
+    assert captured["timeout"] == 120
+
+
+def test_model_report_propagates_http_error(monkeypatch):
+    # raise_for_status on a 5xx must surface (build_report's try/except catches it).
+    monkeypatch.setattr(
+        report.requests, "post",
+        lambda *a, **k: _FakeResp({}, status=503),
+    )
+    with pytest.raises(report.requests.HTTPError):
+        report.model_report({"base": "x", "key": "k", "model": "m"}, "T", [], None)
+
+
+# --- template_report (cv block) ---
+
+def test_template_report_includes_cv_context():
+    md = report.template_report(
+        "Clip", [_card()],
+        {"fusion_label": "vote", "confidence": 0.8, "gold": "src1"},
+    )
+    assert "**CV fusion**: vote (conf 0.8)" in md
+    assert "gold=src1" in md
