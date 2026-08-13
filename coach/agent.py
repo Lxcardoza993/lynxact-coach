@@ -103,7 +103,7 @@ TOOLS = [
 ]
 
 
-def _parse_frontmatter(txt):
+def _parse_frontmatter(txt: str) -> dict:
     """Minimal YAML frontmatter parser: handles `key: value`, `key:` + `- item`
     lists, and multi-line continuation values. Good enough for the vault cards."""
     m = re.match(r"^---\n(.*?)\n---", txt, re.S)
@@ -136,7 +136,7 @@ def _parse_frontmatter(txt):
     return data
 
 
-def _read_technique(slug):
+def _read_technique(slug: str) -> dict | None:
     """Read one technique card from the vault knowledge base."""
     slug = os.path.basename(slug)   # external technique can't escape TECH_DIR
     p = os.path.join(TECH_DIR, f"{slug}.md")
@@ -160,7 +160,7 @@ def _read_technique(slug):
     }
 
 
-def _clip_cards(clip_id):
+def _clip_cards(clip_id: str) -> list[dict] | None:
     """Event cards persisted for a clip (data/tmp/cards/<id>.jsonl)."""
     clip_id = os.path.basename(clip_id)   # external id can't escape CARDS_DIR
     p = os.path.join(CARDS_DIR, f"{clip_id}.jsonl")
@@ -170,7 +170,7 @@ def _clip_cards(clip_id):
         return [json.loads(line) for line in f if line.strip()]
 
 
-def _jsonl_call(cfg, prompt):
+def _jsonl_call(cfg: dict, prompt: str) -> list[dict]:
     """Generic JSON Lines call (no event-card schema filter): parses every line
     that is a JSON object. Used by generate_training_plan."""
     import requests
@@ -197,7 +197,7 @@ def _jsonl_call(cfg, prompt):
     return rows
 
 
-def _run_tool(name, args):
+def _run_tool(name: str, args: dict) -> tuple[bool, dict | list]:
     """Execute a tool call; returns (ok, payload)."""
     if name == "analyze_clip":
         clip_id = args.get("clip_id", "")
@@ -277,7 +277,7 @@ Rules:
 - If a tool returns an error, say what happened and offer the next step."""
 
 
-def _call_tool_model(cfg, messages, tools):
+def _call_tool_model(cfg: dict, messages: list[dict], tools: list[dict]) -> dict:
     """One model call with tools; returns (message, tool_calls)."""
     import requests
     resp = requests.post(
@@ -295,7 +295,7 @@ def _call_tool_model(cfg, messages, tools):
     return resp.json()["choices"][0]["message"]
 
 
-def chat(clip_id, message, history, max_tool_rounds=3):
+def chat(clip_id: str, message: str, history: list[dict] | None, max_tool_rounds: int = 3) -> dict:
     """Run the agent loop. Returns {reply, tool_trace}."""
     from .claude import _cfg
     cfg = _cfg()
@@ -356,7 +356,7 @@ def chat(clip_id, message, history, max_tool_rounds=3):
     }
 
 
-def _summarize(name, payload):
+def _summarize(name: str, payload: dict | list) -> str:
     """Short human-readable summary of a tool result for the UI trace."""
     if name in ("query_technique", "list_players"):
         return {
