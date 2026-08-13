@@ -18,10 +18,14 @@ def range_stream(fname, base_dir):
     if range_header:
         m = re.match(r"bytes=(\d*)-(\d*)", range_header)
         if m:
-            if m.group(1):
-                start = int(m.group(1))
-            if m.group(2):
-                end = min(int(m.group(2)), size - 1)
+            s, e = m.group(1), m.group(2)
+            if s:                       # bytes=start-end or bytes=start- (has start)
+                start = int(s)
+                end = min(int(e), size - 1) if e else size - 1
+            elif e:                     # bytes=-suffix → last N bytes (RFC 7233 §2.1)
+                start = max(0, size - int(e))
+                end = size - 1
+            # else bytes=- → whole file (start=0, end=size-1, already set)
             status = 206
     length = end - start + 1
 
