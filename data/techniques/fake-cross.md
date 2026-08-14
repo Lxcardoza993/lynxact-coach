@@ -3,12 +3,12 @@ name: 假传中
 category: feint
 difficulty: 2
 summary: 做出传中动作假装要传,实际带球突破或回传。
-quick_grasp: 腿抬高 pretend 传、实际走位换。
+quick_grasp: 腿抬高假装传、实际走位换。
 key_points:
   - 腿抬高做出传中姿势,让防守人扑向边线。
   - 等防守人扑空立刻变向突破或回传。
   - 臀部要配合摆动,增加假动作可信度。
-  - 在边路 Quart 有效。
+  - 在边路尤其有效。
 common_mistakes:
   - 假传动作太夸张,暴露意图。
   - 假传后不走,让防守人回位。
