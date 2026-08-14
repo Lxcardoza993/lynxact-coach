@@ -100,6 +100,24 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_tactical_report",
+            "description": (
+                "Generate a written tactical match report (markdown) for a clip: "
+                "event timeline, top moments, event mix, and coaching takeaways. "
+                "Use this when the coach asks for a written tactical report of a clip."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "clip_id": {"type": "string", "description": "clip id, e.g. mancity-chelsea_t38-52"}
+                },
+                "required": ["clip_id"],
+            },
+        },
+    },
 ]
 
 
@@ -268,6 +286,18 @@ def _run_tool(name: str, args: dict) -> tuple[bool, dict | list]:
         except Exception as exc:
             return False, {"error": f"plan generation failed: {exc}"}
 
+    if name == "generate_tactical_report":
+        from .claude import _cfg
+        from .report import build_report
+        clip_id = args.get("clip_id", "")
+        try:
+            r = build_report(clip_id, "live", _cfg())
+        except Exception as exc:
+            return False, {"error": f"report build failed: {exc.__class__.__name__}: {exc}"}
+        if not r:
+            return False, {"error": f"no baked/cards data for clip {clip_id}"}
+        return True, r
+
     return False, {"error": f"unknown tool {name}"}
 
 
@@ -276,7 +306,8 @@ You help coaches analyze footage and improve their players' dribbling technique.
 You have tools: analyze_clip (clip analysis + event cards), query_technique
 (knowledge base: key points, common mistakes, quick-grasp cue),
 list_players (famous players for a technique), generate_training_plan
-(3-day structured plan with drills/sets/cues).
+(3-day structured plan with drills/sets/cues), generate_tactical_report
+(written tactical match report: timeline, top moments, coaching takeaways).
 Rules:
 - Always answer in the coach's language (Chinese if they write Chinese).
 - Ground every claim in tool output or the clip's own data. Never invent
@@ -398,4 +429,7 @@ def _summarize(name: str, payload: dict | list) -> str:
         return f"{payload.get('title')} · {len(cards) if isinstance(cards, list) else 'no'} cards"
     if name == "generate_training_plan":
         return f"{len(payload) if isinstance(payload, list) else 0} drills"
+    if name == "generate_tactical_report":
+        md = payload.get("markdown", "") if isinstance(payload, dict) else ""
+        return f"{len(md)}字报告({payload.get('generated_by', '?')})"
     return "ok"
