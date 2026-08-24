@@ -244,13 +244,13 @@ def _catalog_write(data: dict) -> None:
         payload = json.dumps(data, ensure_ascii=False)
         if file_id:
             resp = drive_req("PATCH", DRIVE_UPLOAD + f"/files/{file_id}",
-                             params={"uploadType": "multipart"},
+                             params={"uploadType": "multipart", "supportsAllDrives": "true"},
                              files={"metadata": (None, json.dumps({"name": CATALOG_NAME}),
                                                 "application/json"),
                                     "media": ("catalog.json", payload, "application/json")})
         else:
             resp = drive_req("POST", DRIVE_UPLOAD + "/files",
-                             params={"uploadType": "multipart"},
+                             params={"uploadType": "multipart", "supportsAllDrives": "true"},
                              files={"metadata": (None, json.dumps({
                                  "name": CATALOG_NAME,
                                  "parents": [root_id()],
@@ -328,7 +328,7 @@ def put_file(path: str, folder: str, mime: str = "video/mp4") -> str:
     folder_ok = folder or root_id()
     size = os.path.getsize(path)
     init = drive_req("POST", DRIVE_UPLOAD + "/files",
-                     params={"uploadType": "resumable"}, json_body=True,
+                     params={"uploadType": "resumable", "supportsAllDrives": "true"}, json_body=True,
                      json={"name": os.path.basename(path),
                            "parents": [folder_ok], "mimeType": mime})
     if init.status_code not in (200, 201):
