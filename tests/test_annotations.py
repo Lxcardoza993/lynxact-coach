@@ -218,3 +218,53 @@ def test_non_json_body_400s(clip):
     client = app.test_client()
     r = client.post(f"/api/annotations/{clip}", data="not json", content_type="application/json")
     assert r.status_code == 400
+
+
+# ---- clip alignment offset ----
+
+def test_offset_defaults_to_zero(store):
+    assert store.get_offset("never-set") == 0.0
+
+
+def test_offset_roundtrip(store):
+    assert store.set_offset("c1", 5.25) == 5.25
+    assert store.get_offset("c1") == 5.25
+    store.set_offset("c1", -2)          # negative = trimmed video start
+    assert store.get_offset("c1") == -2.0
+
+
+def test_offset_accepts_numeric_strings(store):
+    assert store.set_offset("c1", "5.5") == 5.5
+
+
+@pytest.mark.parametrize("bad", ["abc", None, {}, 3601, -3601, float("nan"), float("inf")])
+def test_offset_rejects_invalid(store, bad):
+    with pytest.raises(ValueError):
+        store.set_offset("c1", bad)
+
+
+def test_offset_corrupt_file_degrades_to_zero(store):
+    store.set_offset("c1", 3.0)
+    with open(anno._offset_path("c1"), "w", encoding="utf-8") as fh:
+        fh.write("{ not json")
+    assert store.get_offset("c1") == 0.0
+
+
+def test_offset_endpoints_unknown_clip_404():
+    client = app.test_client()
+    assert client.get("/api/clips/ghost/offset").status_code == 404
+    assert client.post("/api/clips/ghost/offset", json={"offset": 1}).status_code == 404
+
+
+def test_offset_endpoints_roundtrip(clip):
+    client = app.test_client()
+    assert client.get(f"/api/clips/{clip}/offset").get_json()["offset"] == 0.0
+    r = client.post(f"/api/clips/{clip}/offset", json={"offset": 5.0})
+    assert r.status_code == 200 and r.get_json()["offset"] == 5.0
+    assert client.get(f"/api/clips/{clip}/offset").get_json()["offset"] == 5.0
+
+
+def test_offset_endpoints_bad_payload_400(clip):
+    client = app.test_client()
+    r = client.post(f"/api/clips/{clip}/offset", json={"offset": "NaN"})
+    assert r.status_code == 400 and "offset" in r.get_json()["error"]

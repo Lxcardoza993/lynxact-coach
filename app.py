@@ -171,6 +171,27 @@ def api_annotations_del(clip_id: str, uid: str) -> Response:
     return jsonify(deleted=uid)
 
 
+@app.route("/api/clips/<clip_id>/offset")
+def api_clip_offset(clip_id: str) -> Response:
+    """Clip alignment offset in seconds (0 when unset)."""
+    if not get_clip(clip_id):
+        abort(404)
+    return jsonify(clip_id=clip_id, offset=anno_mod.get_offset(clip_id))
+
+
+@app.route("/api/clips/<clip_id>/offset", methods=["POST"])
+def api_clip_offset_set(clip_id: str) -> Response:
+    """Persist the alignment offset. 400 on non-finite/oversized input."""
+    if not get_clip(clip_id):
+        abort(404)
+    payload = request.get_json(silent=True) or {}
+    try:
+        offset = anno_mod.set_offset(clip_id, payload.get("offset"))
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    return jsonify(clip_id=clip_id, offset=offset)
+
+
 @app.route("/api/health")
 def health() -> Response:
     return jsonify(ok=True, mode=os.environ.get("COACH_MODE", "replay"))

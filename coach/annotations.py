@@ -192,3 +192,45 @@ def clear_annotations(clip_id: str) -> int:
         if items:
             _save(clip_id, [])
     return len(items)
+
+
+# ---- clip alignment offset (视频片头/掐头去尾 → 事件时间轴平移) ----
+
+OFFSET_MAX_ABS = 3600  # ±1h ceiling — offsets beyond this are nonsense for clips
+
+
+def _offset_path(clip_id: str) -> str:
+    return os.path.join(ANNOT_DIR, os.path.basename(clip_id) + ".offset.json")
+
+
+def get_offset(clip_id: str) -> float:
+    """Alignment offset for clip_id in seconds; 0.0 when unset/corrupt/invalid."""
+    path = _offset_path(clip_id)
+    if not os.path.exists(path):
+        return 0.0
+    try:
+        with open(path, encoding="utf-8") as fh:
+            raw = json.load(fh)
+        x = float(raw.get("offset", 0.0))
+        if not math.isfinite(x) or abs(x) > OFFSET_MAX_ABS:
+            return 0.0
+        return x
+    except (OSError, ValueError, TypeError):
+        return 0.0
+
+
+def set_offset(clip_id: str, offset: object) -> float:
+    """Persist the alignment offset. Raises ValueError on non-finite/oversized input."""
+    try:
+        x = float(offset)
+    except (TypeError, ValueError):
+        raise ValueError("offset must be a number") from None
+    if not math.isfinite(x) or abs(x) > OFFSET_MAX_ABS:
+        raise ValueError("offset must be finite and within ±3600s")
+    with _locked(clip_id):
+        os.makedirs(ANNOT_DIR, exist_ok=True)
+        tmp = _offset_path(clip_id) + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump({"offset": x}, fh)
+        os.replace(tmp, _offset_path(clip_id))
+    return x

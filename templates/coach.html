@@ -76,6 +76,12 @@
   <span class="tag ok">CV fusion: {{ clip.cv_context.fusion_label }} ({{ '%.0f'|format(clip.cv_context.confidence * 100) }}%)</span>
   {% endif %}
   <span id="status">idle — press play</span>
+  <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)">
+    ⏱ align <input id="offsetIn" type="number" step="0.1" value="0"
+    style="width:62px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--fg);padding:3px 6px;font:inherit"> s
+    <button id="offsetSave" title="所有事件卡/解说整体平移,对齐素材片头或掐头去尾"
+    style="background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer">apply</button>
+  </span>
   <a class="tag" href="?mode=live" style="text-decoration:none;cursor:pointer">▶ TRY LIVE (model-generated)</a>
   <button id="reportBtn" disabled style="background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">📋 Full report</button>
   <button id="exportBtn" disabled style="background:var(--panel);color:var(--gold);border:1px solid var(--gold);border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">🖼 Export PNG</button>
@@ -132,6 +138,7 @@ const statusEl = document.getElementById('status');
 const trEl = document.getElementById('transcript');
 const cardsEl = document.getElementById('cards');
 const cardsData = [];
+let clipOffset = 0;
 let es = null;
 function fmt(t){ return t.toFixed(1) + 's'; }
 function setDoneState(){
@@ -192,9 +199,12 @@ function syncTimed(cont, cls){
   for (const el of cont.children) {
     if (!(el.classList && el.classList.contains(cls))) continue;
     const t = parseFloat(el.dataset.t);
-    const show = isNaN(t) ? true : t <= now;
+    const eff = isNaN(t) ? NaN : t + clipOffset;
+    const show = isNaN(eff) ? true : eff <= now;
     el.classList.toggle('pending', !show);
     el.classList.remove('cur');
+    const tsEl = el.querySelector('.ts');
+    if (tsEl) tsEl.textContent = fmt(isNaN(eff) ? t : eff);
     if (show) last = el;
   }
   if (last) {
@@ -206,6 +216,29 @@ function syncTimed(cont, cls){
   } else delete cont.dataset.cur;
 }
 function syncAll(){ syncTimed(cardsEl, 'ecard'); syncTimed(trEl, 'tr'); }
+// ---- 对齐偏移量:素材带片头/被掐头时,整条时间轴平移 offset 秒 ----
+const offsetIn = document.getElementById('offsetIn');
+(async function loadOffset(){
+  try {
+    const r = await fetch('/api/clips/' + clipId + '/offset');
+    if (r.ok) { const d = await r.json(); clipOffset = d.offset || 0; }
+  } catch (_) {}
+  offsetIn.value = clipOffset;
+  syncAll();
+})();
+document.getElementById('offsetSave').addEventListener('click', async () => {
+  const v = parseFloat(offsetIn.value);
+  if (!isFinite(v)) { statusEl.textContent = '⚠ offset must be a number'; return; }
+  try {
+    const r = await fetch('/api/clips/' + clipId + '/offset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({offset: v})});
+    const d = await r.json();
+    if (!r.ok || d.error) { statusEl.textContent = '⚠ ' + (d.error || ('HTTP ' + r.status)); return; }
+    clipOffset = d.offset;
+    offsetIn.value = clipOffset;
+    syncAll();
+    statusEl.textContent = '✅ offset ' + clipOffset + 's saved';
+  } catch (e) { statusEl.textContent = '⚠ offset save failed: ' + e.message; }
+});
 document.getElementById('vid').addEventListener('play', start);
 document.getElementById('vid').addEventListener('error', () => {
   statusEl.textContent = '⚠ video failed to load — check clip file';
