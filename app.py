@@ -13,6 +13,7 @@ import uuid
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request
 
 from coach import agent
+from coach import annotations as anno_mod
 from coach import report as report_mod
 from coach.claude import _cfg
 from coach.clips import AUDIO_DIR, TMP_DIR, get_clip, list_clips, register_upload, video_dir
@@ -138,6 +139,36 @@ def api_agent_chat() -> Response:
         return jsonify(error="empty message"), 400
     result = agent.chat(clip_id, message, d.get("history") or [])
     return jsonify(result)
+
+
+@app.route("/api/annotations/<clip_id>")
+def api_annotations(clip_id: str) -> Response:
+    """List telestration strokes anchored to a clip (oldest first)."""
+    if not get_clip(clip_id):
+        abort(404)
+    return jsonify(clip_id=clip_id, items=anno_mod.list_annotations(clip_id))
+
+
+@app.route("/api/annotations/<clip_id>", methods=["POST"])
+def api_annotations_add(clip_id: str) -> Response:
+    """Add one stroke, validate at the store boundary. 400 on bad payload."""
+    if not get_clip(clip_id):
+        abort(404)
+    payload = request.get_json(silent=True)
+    try:
+        item = anno_mod.add_annotation(clip_id, payload)
+    except ValueError as exc:   # store-side validation gave a terse reason
+        return jsonify(error=str(exc)), 400
+    return jsonify(item), 201
+
+
+@app.route("/api/annotations/<clip_id>/<uid>", methods=["DELETE"])
+def api_annotations_del(clip_id: str, uid: str) -> Response:
+    if not get_clip(clip_id):
+        abort(404)
+    if not anno_mod.delete_annotation(clip_id, uid):
+        return jsonify(error="annotation not found"), 404
+    return jsonify(deleted=uid)
 
 
 @app.route("/api/health")

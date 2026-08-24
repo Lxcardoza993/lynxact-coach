@@ -68,7 +68,7 @@ def template_report(title: str, cards: list[dict], cv: dict | None) -> str:
             f"- **{c.get('t', 0):.1f}s** [{c.get('type', '?')}] "
             f"{c.get('title', '')} — ★{c.get('rating', '?')}{spec}"
         )
-    top = [c for c in cards if isinstance(c.get("rating"), (int, float)) and c["rating"] >= 9]
+    top = [c for c in cards if isinstance(c.get("rating"), int | float) and c["rating"] >= 9]
     if top:
         lines += ["", "## Top moments"]
         lines.append("")

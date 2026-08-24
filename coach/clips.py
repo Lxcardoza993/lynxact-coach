@@ -24,7 +24,7 @@ VAULT_ROOT = os.environ.get(
 def _num(v, default=0.0) -> float:
     """Coerce a card field to float for sort keys / :.1f formats; LLM cards
     sometimes emit t/rating as strings. Returns default on non-numeric values."""
-    if isinstance(v, (int, float)):
+    if isinstance(v, int | float):
         return float(v)
     try:
         return float(v)
