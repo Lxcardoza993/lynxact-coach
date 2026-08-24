@@ -36,7 +36,7 @@ RETIRED = {
 
 def run(cmd: list[str], timeout: int = 60) -> str | None:
     try:
-        out = subprocess.run(  # nosec
+        out = subprocess.run(  # noqa: S603 — fixed argv lists, no shell
             cmd, capture_output=True, text=True, timeout=timeout,
         )
         return out.stdout.strip() if out.returncode == 0 else None

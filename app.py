@@ -22,7 +22,7 @@ from flask import (
     send_from_directory,
 )
 
-from coach import agent
+from coach import agent, storage
 from coach import annotations as anno_mod
 from coach import report as report_mod
 from coach.claude import _cfg
@@ -79,15 +79,76 @@ def coach_view(clip_id: str) -> str:
     return render_template("coach.html", clip=clip)
 
 
+def _cloud_video(fname: str, file_id: str) -> Response | None:
+    """Serve <video> byte ranges from Drive; None means 'fall back to local'.
+
+    Parses the request Range, forwards it to Drive and relays a 206/200
+    stream. When Drive ignores the Range header (200 + full body) the file is
+    spooled once into the local cloud cache and served from there — the next
+    request drags the progress bar locally, no red screen either way."""
+    rng = request.headers.get("Range")
+    start = end = None
+    if rng and rng.startswith("bytes="):
+        spec = rng.split("=", 1)[1].split("-", 1)
+        try:
+            start = int(spec[0]) if spec[0] else None
+            end = int(spec[1]) if len(spec) > 1 and spec[1] else None
+        except ValueError:
+            start = end = None
+    status, hdr, resp = storage.fetch_range(file_id, start, end)
+    try:
+        if status == 200 and start is not None \
+                and not hdr.get("Content-Range", "").startswith("bytes "):
+            resp.close()                 # Range ignored — spool then serve locally
+            path = storage.materialize(file_id, fname)
+            return range_stream(os.path.basename(fname), os.path.dirname(path))
+        if status not in (200, 206):
+            return None
+        headers = {"Accept-Ranges": "bytes"}
+        for key in ("Content-Range", "Content-Length", "Content-Type"):
+            if hdr.get(key) is not None:
+                headers[key] = hdr[key]
+        headers.setdefault("Content-Type", "video/mp4")
+
+        def _body():
+            try:
+                yield from resp.iter_content(storage.CHUNK)
+            finally:
+                resp.close()
+
+        return Response(_body(), status=status, headers=headers)
+    except BaseException:
+        resp.close()
+        raise
+
+
 @app.route("/video/<path:fname>")
 def video(fname: str) -> Response:
     clip_id = fname.rsplit(".", 1)[0]
+    clip = get_clip(clip_id)
+    if clip and clip.get("_file_id"):
+        try:
+            resp = _cloud_video(fname, clip["_file_id"])
+            if resp is not None:
+                return resp
+        except storage.StorageError as exc:
+            logger.warning("cloud video failed for %s: %s", clip_id, exc)
     return range_stream(fname, video_dir(clip_id))
 
 
 @app.route("/posters/<name>")
 def poster(name: str) -> Response:
-    """Generated preview posters (data/posters, gitignored)."""
+    """Generated preview posters (data/posters, gitignored). Cloud mode serves
+    them from Drive first with a day-long public cache for the CDN edge."""
+    name = os.path.basename(name)
+    if storage.enabled():
+        try:
+            data = storage.poster_bytes(name)
+            if data is not None:
+                return Response(data, mimetype="image/jpeg",
+                                headers={"Cache-Control": "public, max-age=86400"})
+        except storage.StorageError as exc:
+            logger.warning("cloud poster failed for %s: %s", name, exc)
     return send_from_directory(
         POSTER_DIR, os.path.basename(name), mimetype="image/jpeg"
     )
@@ -144,13 +205,30 @@ def api_upload() -> Response:
         logger.warning("ffprobe failed for %s: %s", tmp_path, exc)
         duration = 0
     clip_id = register_upload(tmp_path, f.filename, duration)
+    mp4_path = os.path.join(video_dir(clip_id), clip_id + ".mp4")
+    if storage.enabled():
+        try:
+            file_id = storage.put_file(mp4_path, storage.folder_id(storage.UPLOAD_FOLDER))
+        except storage.StorageError as exc:
+            logger.warning("cloud upload failed for %s: %s", clip_id, exc)
+        else:
+            def _catalog_add(cat: dict) -> None:
+                cat.setdefault("uploads", []).append({
+                    "id": clip_id, "title": f.filename,
+                    "duration": duration, "file_id": file_id,
+                })
+
+            try:
+                storage.update_catalog(_catalog_add)
+            except storage.StorageError as exc:
+                logger.warning("cloud catalog update failed for %s: %s", clip_id, exc)
     # 抽 16k 单声道音轨给 Speechmatics
     os.makedirs(AUDIO_DIR, exist_ok=True)
     wav = os.path.join(AUDIO_DIR, clip_id + ".wav")
     try:
         # ffmpeg via list args (path from trusted env) — no shell injection
         subprocess.run(  # nosec
-            [ffmpeg, "-y", "-i", os.path.join(video_dir(clip_id), clip_id + ".mp4"),
+            [ffmpeg, "-y", "-i", mp4_path,
              "-ac", "1", "-ar", "16000", "-f", "wav", wav],
             capture_output=True, timeout=120,
         )
@@ -235,9 +313,21 @@ def api_clip_offset_set(clip_id: str) -> Response:
     return jsonify(clip_id=clip_id, offset=offset)
 
 
+@app.route("/api/library")
+def api_library() -> Response:
+    """Clip list for the '☁ from library' picker on the index page."""
+    items = [{
+        "id": c["id"], "title": c["title"], "duration": c.get("duration"),
+        "poster": c.get("poster"), "source": c["source"],
+    } for c in list_clips()]
+    return jsonify(clips=items)
+
+
 @app.route("/api/health")
 def health() -> Response:
-    return jsonify(ok=True, mode=os.environ.get("COACH_MODE", "replay"))
+    drive_ok, drive_msg = storage.ping()
+    return jsonify(ok=True, mode=os.environ.get("COACH_MODE", "replay"),
+                   drive={"enabled": storage.enabled(), "ok": drive_ok, "msg": drive_msg})
 
 
 if __name__ == "__main__":

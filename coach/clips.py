@@ -9,6 +9,8 @@ import os
 import re
 import uuid
 
+from coach import storage
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BAKED_DIR = os.path.join(BASE, "data", "baked")
 POSTER_DIR = os.path.join(BASE, "data", "posters")
@@ -94,10 +96,62 @@ def register_upload(src_path: str, orig_name: str, duration: float) -> str:
 
 def poster_url(clip_id: str) -> str | None:
     """Preview-poster URL for a clip ('/posters/<id>.jpg'), or None when no
-    poster has been generated (index card then falls back to a placeholder)."""
+    poster is known (index card then falls back to a placeholder). In cloud
+    mode the poster may live only on Drive, so a catalog entry claims one."""
     clip_id = os.path.basename(clip_id)
-    path = os.path.join(POSTER_DIR, clip_id + ".jpg")
-    return f"/posters/{clip_id}.jpg" if os.path.exists(path) else None
+    if os.path.exists(os.path.join(POSTER_DIR, clip_id + ".jpg")):
+        return f"/posters/{clip_id}.jpg"
+    if _cloud_entry(clip_id) is not None:
+        return f"/posters/{clip_id}.jpg"
+    return None
+
+
+# --- cloud mode (Drive catalog) -------------------------------------------------
+
+def _cloud_catalog() -> dict:
+    """The cloud clip catalog ({vault:[...], uploads:[...]}) or {} — a Drive
+    failure degrades to local discovery rather than raising out of a page."""
+    if not storage.enabled():
+        return {}
+    try:
+        return storage.get_catalog()
+    except storage.StorageError:
+        return {}
+
+
+_CLOUD_SOURCE = {"uploads": "upload", "vault": "vault"}
+
+
+def _cloud_entry(clip_id: str) -> dict | None:
+    for section in ("uploads", "vault"):
+        for entry in _cloud_catalog().get(section, []):
+            if entry.get("id") == clip_id:
+                return {**entry, "source": _CLOUD_SOURCE[section]}
+    return None
+
+
+def _cloud_clip_dict(clip_id: str, entry: dict) -> dict:
+    """Shape a catalog entry into the standard clip dict. Baked analysis and
+    annotations stay local — the catalog only defines the video asset."""
+    baked = load_baked(clip_id)
+    technique, player, year = parse_stem(clip_id)
+    title = entry.get("title")
+    if not title and entry.get("source") != "upload":
+        title = f"{player.title()} — {technique.title()} ({year})"
+    return {
+        "id": clip_id,
+        "file": clip_id + ".mp4",
+        "title": title or clip_id,
+        "technique": technique,
+        "player": player,
+        "year": year,
+        "baked": baked is not None,
+        "duration": entry.get("duration") or (baked or {}).get("duration"),
+        "cv_context": (baked or {}).get("cv_context"),
+        "poster": f"/posters/{clip_id}.jpg",
+        "source": entry.get("source", "vault"),
+        "_file_id": entry.get("file_id"),
+    }
 
 
 def get_upload(clip_id: str) -> dict | None:
@@ -121,8 +175,11 @@ def get_upload(clip_id: str) -> dict | None:
 
 
 def get_clip(clip_id: str) -> dict | None:
-    """Return the clip dict (upload or vault source), or None if not found."""
+    """Return the clip dict (cloud catalog entry, upload, or vault), or None."""
     clip_id = os.path.basename(clip_id)   # external id can't escape its dirs
+    cloud = _cloud_entry(clip_id)
+    if cloud is not None:
+        return _cloud_clip_dict(clip_id, cloud)
     up = get_upload(clip_id)
     if up:
         return {**up, "technique": None, "player": None, "year": None,
@@ -167,20 +224,29 @@ def _derived_paths(clip_id: str) -> list[str]:
     ]
 
 
+def _catalog_drop(cat: dict, clip_id: str) -> None:
+    for section in ("vault", "uploads"):
+        cat[section] = [e for e in cat.get(section, []) if e.get("id") != clip_id]
+
+
 def delete_clip(clip_id: str) -> bool:
     """Delete a clip and every file derived from it, and (for uploads) drop
-    its registry entry. Returns True iff an mp4 existed and is gone now.
+    its registry entry. In cloud mode also removes the Drive objects and the
+    catalog entry. Returns True iff no mp4 is left — neither locally nor in
+    the cloud catalog.
 
     clip_id is basenamed exactly like get_clip, so ids such as '../evil'
     cannot escape the data dirs. Side files are removed best-effort — the
-    mp4 removal alone decides success, matching the store discipline that a
-    missing artifact degrades instead of raising.
+    mp4/catalog removal alone decides success, matching the store discipline
+    that a missing artifact degrades instead of raising.
     """
     clip_id = os.path.basename(clip_id)
     if not clip_id:
         return False
+    cloud = _cloud_entry(clip_id)
     mp4 = os.path.join(video_dir(clip_id), clip_id + ".mp4")
-    if not os.path.exists(mp4):
+    mp4_existed = os.path.exists(mp4)
+    if not mp4_existed and not cloud:
         return False
     for path in [mp4] + _derived_paths(clip_id):
         try:
@@ -191,21 +257,47 @@ def delete_clip(clip_id: str) -> bool:
         reg = _reg()
         del reg[clip_id]
         _save_reg(reg)
-    return not os.path.exists(mp4)
+    cloud_gone = not cloud
+    if cloud:
+        try:
+            if cloud.get("file_id"):
+                storage.delete_file(cloud["file_id"])
+            poster_id = storage.poster_file_id(clip_id + ".jpg")
+            if poster_id:
+                storage.delete_file(poster_id)
+                storage.invalidate_posters()
+            storage.update_catalog(lambda cat: _catalog_drop(cat, clip_id))
+            cloud_gone = True
+        except storage.StorageError:
+            cloud_gone = False        # keep catalog truth on partial cloud failures
+    return (not os.path.exists(mp4)) and cloud_gone
 
 
 def list_clips() -> list[dict]:
-    """Return all clips — uploads first, then vault — sorted for display."""
-    clips = []
+    """Return all clips — uploads first, then vault — sorted for display.
+
+    Cloud mode merges catalog entries with local files by id (catalog wins),
+    so a half-migrated instance still shows one coherent list."""
+    seen: dict[str, dict] = {}
+    for section in ("uploads", "vault"):
+        for entry in _cloud_catalog().get(section, []):
+            entry_id = entry.get("id")
+            if entry_id and entry_id not in seen:
+                seen[entry_id] = _cloud_clip_dict(
+                    entry_id, {**entry, "source": _CLOUD_SOURCE[section]}
+                )
     for clip_id in _reg():
-        clip = get_clip(clip_id)
-        if clip:
-            clips.append(clip)
+        if clip_id not in seen:
+            clip = get_clip(clip_id)
+            if clip:
+                seen[clip_id] = clip
     if os.path.isdir(VAULT_ROOT):
         for fname in sorted(os.listdir(VAULT_ROOT)):
-            if fname.lower().endswith(".mp4"):
-                clip = get_clip(fname[:-4])
+            clip_id = fname[:-4]
+            if fname.lower().endswith(".mp4") and clip_id not in seen:
+                clip = get_clip(clip_id)
                 if clip:
-                    clips.append(clip)
+                    seen[clip_id] = clip
+    clips = list(seen.values())
     clips.sort(key=lambda c: (c["source"] != "upload", not c["baked"], c["id"]))
     return clips
