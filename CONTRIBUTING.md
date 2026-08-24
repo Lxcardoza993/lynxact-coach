@@ -53,3 +53,46 @@ Small, focused PRs. Before requesting review:
 
 Email **founder@lxlynx.com** with details. Please do not open a public issue
 for security vulnerabilities — give us a chance to patch first.
+
+## Rollback guidance
+
+### If `feat/telestration` causes issues after merge
+
+**Option 1: Revert commit (non-linear history)**
+
+```bash
+git checkout main
+git revert <commit-hash>              # revert the telestration merge commit
+git push origin main
+```
+
+**Option 2: Branch back to previous state (linear history)**
+
+```bash
+# Before merging feat/telestration, the main branch pointed to a9a6a3c
+git checkout -b rollback-telestration
+git reset --hard a9a6a3c
+git push origin rollback-telestration
+```
+
+Then open a PR from `rollback-telestration` → `main`.
+
+**Rollback checklist**
+
+- [ ] Stop any production servers running the app
+- [ ] Run `git revert` or `git reset --hard`
+- [ ] Verify tests pass: `pytest --cov=coach --cov-report=term-missing`
+- [ ] Verify lints: `ruff check .`
+- [ ] Verify security: `bandit -r coach app.py`
+- [ ] Push and test on staging before production
+
+## Telestration feature quick reference
+
+| Feature | Description |
+|---------|-------------|
+| Keyboard | `Space`: play/pause while drawing; `Esc`: exit drawing mode |
+| Tools | Arrow (➤), Freehand (✎), Rect (▭) |
+| Colors | Gold (#f2cc60), Blue (#58a6ff), Green (#3fb950), Red (#f85149) |
+| Point limit | 2–600 points per stroke, 200 strokes per clip |
+| Storage | `data/annotations/<clip_id>.json`, atomic writes |
+| Export | `frame PNG` button: captures frame + visible strokes as PNG |
