@@ -70,6 +70,19 @@ def test_delete_upload_clip_unregisters(isolated):
     assert list(isolated["AUDIO_DIR"].iterdir()) == []
 
 
+def test_delete_upload_clip_removes_poster_and_derived(isolated):
+    # Poster files are shared between sources (POSTER_DIR knows no source) —
+    # an upload with a generated poster must still clean it up fully.
+    src = isolated["TMP_DIR"] / "raw.mp4"
+    src.write_bytes(b"x")
+    clip_id = clips.register_upload(str(src), "Poster Clip.mp4", 5.0)
+    _seed_derived(isolated, clip_id)
+    assert clips.delete_clip(clip_id) is True
+    for d in ("POSTER_DIR", "CARDS_DIR", "AUDIO_DIR", "ANNOT_DIR"):
+        assert list(isolated[d].iterdir()) == []
+    assert clips._reg() == {}
+
+
 def test_delete_unknown_clip_returns_false(isolated):
     assert clips.delete_clip("no-such-clip") is False
 
