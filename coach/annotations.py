@@ -169,7 +169,6 @@ def add_annotation(clip_id: str, payload) -> dict:
         items.append(item)
         _save(clip_id, items)
     return item
-    return item
 
 
 def delete_annotation(clip_id: str, uid: str) -> bool:
