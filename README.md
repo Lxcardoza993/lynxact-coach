@@ -16,6 +16,7 @@ full-match report in real time.
 - **上传通道**:拖入 mp4 → ffprobe 时长 → ffmpeg 抽 16k 音轨 → Speechmatics 实时转录 → live 分析
 - **全场报告**:live=模型生成 markdown;replay=零成本模板(时间线/高光/事件分布/教练要点)
 - **PNG 导出**:一键下载 Top 3 时刻品牌分享卡(客户端 canvas,零依赖)
+- **✏ Telestration 战术画板**:暂停视频,直接在画面上画箭头 / 自由线 / 矩形(4 色),每一笔锚定到视频时间戳;标注列表可点选跳转、逐条删除;一键导出「当前帧 + 标注」合成 PNG —— 教练讲解球员跑位/防线的战术沟通武器(对标 Coach Paint 的能力,零模型、零外部依赖)
 - **回放兜底**:`data/baked/` 预烘焙 3 条金标 clip,断网无 key 也能完整演示
 - **🎙 AI Coach 对话 Agent**(GOAI Boundless Agents 形态):多轮追问 + 4 工具 function-calling 闭环
   `analyze_clip`(clip 事件卡+CV 上下文+转录)/ `query_technique`(62 技术卡知识库)/
@@ -38,8 +39,9 @@ python3 app.py                     # http://127.0.0.1:6901
 
 | 文件 | 作用 |
 |------|------|
-| `app.py` | 路由:/ 选片、/coach/<id> 实时页、/video/<f> Range 流、/api/stream SSE、/api/report、/api/upload |
+| `app.py` | 路由:/ 选片、/coach/<id> 实时页、/video/<f> Range 流、/api/stream SSE、/api/report、/api/upload、/api/annotations(画板 CRUD) |
 | `coach/clips.py` | clip 发现(VAULT_ROOT 文件名=金标)+ 预烘焙 + 上传注册表 |
+| `coach/annotations.py` | Telestration 画板存储:归一化坐标笔画、白名单校验、原子写 |
 | `coach/stream.py` | SSE 时间线回放引擎(转录流 + 事件卡交错,REPLAY_SPEED 变速) |
 | `coach/claude.py` | live 引擎:6s 窗口 prompt + JSON Lines 解析 + grounding/speculative + 持久化 |
 | `coach/speechmatics.py` | Speechmatics Real-time 客户端(wav 按真实语速推流,句读出窗) |
