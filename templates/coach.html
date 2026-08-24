@@ -13,13 +13,20 @@
   .tag { font-size:12px; padding:2px 10px; border-radius:99px; border:1px solid var(--line); color:var(--dim); }
   .tag.gold { color:var(--gold); border-color:var(--gold); }
   .tag.ok { color:var(--ok); border-color:var(--ok); }
-  main { display:grid; grid-template-columns:3fr 2fr; gap:14px; padding:14px 20px; }
-  video { width:100%; background:#000; border-radius:10px; border:1px solid var(--line); }
+  main { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:14px; padding:14px 20px; align-items:start; }
+  #vidCol { grid-column:1; grid-row:1 / span 2; min-width:0; }
+  video { width:100%; height:auto; min-width:0; background:#000; border-radius:10px; border:1px solid var(--line); }
   .pane { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; height:52vh; overflow-y:auto; }
   .pane h2 { margin:0 0 8px; font-size:13px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
   .tr { padding:5px 0; border-bottom:1px dashed #21262d; font-size:14px; }
   .tr .ts { color:var(--acc); font-variant-numeric:tabular-nums; margin-right:8px; font-size:12px; }
-  #cards { grid-column:1 / -1; display:flex; flex-direction:column; gap:12px; height:auto; max-height:none; min-height:120px; }
+  #cards { grid-column:2; grid-row:1; display:flex; flex-direction:column; gap:12px; height:52vh; max-height:none; min-height:120px; overflow-y:auto; }
+  #commentary { grid-column:2; grid-row:2; }
+  @media (max-width:900px) {
+    main { grid-template-columns:1fr; }
+    #vidCol, #cards, #commentary { grid-column:1; grid-row:auto; }
+    #cards { height:auto; max-height:60vh; }
+  }
   .ecard { border:1px solid var(--line); border-left:3px solid var(--acc); border-radius:8px; padding:10px 14px; background:#0d1420; animation:cardIn .45s cubic-bezier(.16,1,.3,1) both; }
   @keyframes cardIn { from { opacity:0; transform:translateY(14px) scale(.98); } to { opacity:1; transform:none; } }
   .ecard.hot { border-left-color:var(--gold); box-shadow:0 0 0 1px rgba(242,204,96,.25), 0 4px 18px rgba(242,204,96,.08); }
@@ -71,7 +78,7 @@
   <button id="teloBtn" style="background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer">✏ Telestration</button>
 </header>
 <main>
-  <div>
+  <div id="vidCol">
     <div id="vidWrap">
       <video id="vid" controls preload="metadata" src="/video/{{ clip.file }}"></video>
       <canvas id="teloCv"></canvas>
@@ -97,7 +104,7 @@
     </div>
     <div id="annotList"></div>
   </div>
-  <div class="pane"><h2>Live commentary</h2><div id="transcript"></div></div>
+  <div class="pane" id="commentary"><h2>Live commentary</h2><div id="transcript"></div></div>
   <div class="pane" id="cards"><h2>Tactical event cards</h2></div>
   <div class="pane" id="coachPane" style="grid-column:1 / -1;height:44vh;display:flex;flex-direction:column">
     <h2>🎙 AI Coach <span style="color:var(--dim);text-transform:none;font-weight:400;letter-spacing:0">— 多轮追问 · 工具调用闭环(analyze/知识库/球员/训练计划)</span></h2>
