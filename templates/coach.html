@@ -20,6 +20,10 @@
   .pane h2 { margin:0 0 8px; font-size:13px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
   .tr { padding:5px 0; border-bottom:1px dashed #21262d; font-size:14px; }
   .tr .ts { color:var(--acc); font-variant-numeric:tabular-nums; margin-right:8px; font-size:12px; }
+  /* 时间同步:未播放到的时间戳信息不显示 */
+  .ecard.pending, .tr.pending { display:none; }
+  .ecard.cur { border-color:var(--acc); box-shadow:0 0 0 1px rgba(88,166,255,.35); }
+  .tr.cur .ts { color:var(--gold); }
   #cards { grid-column:2; grid-row:1; display:flex; flex-direction:column; gap:12px; height:52vh; max-height:none; min-height:120px; overflow-y:auto; }
   #commentary { grid-column:2; grid-row:2; }
   @media (max-width:900px) {
@@ -145,16 +149,18 @@ function start(){
   es.addEventListener('transcript', e => {
     const d = JSON.parse(e.data);
     const div = document.createElement('div');
-    div.className = 'tr';
+    div.className = 'tr pending';
+    div.dataset.t = d.t;
     div.innerHTML = '<span class="ts">' + fmt(d.t) + '</span>' + esc(d.text);
     trEl.appendChild(div);
-    trEl.parentElement.scrollTop = trEl.parentElement.scrollHeight;
+    syncTimed(trEl, 'tr');
   });
   es.addEventListener('card', e => {
     const d = JSON.parse(e.data);
     cardsData.push(d);
     const div = document.createElement('div');
-    div.className = 'ecard' + ((d.rating || 0) >= 9 ? ' hot' : '');
+    div.className = 'ecard pending' + ((d.rating || 0) >= 9 ? ' hot' : '');
+    div.dataset.t = d.t;
     div.innerHTML =
       '<div class="head"><span class="type">' + esc(d.type) + '</span>' +
       '<span class="ts">' + fmt(d.t) + '</span>' +
@@ -166,7 +172,7 @@ function start(){
     div.querySelector('.title').textContent = d.title;
     div.querySelector('.an').textContent = d.analysis;
     cardsEl.appendChild(div);
-    div.scrollIntoView({behavior:'smooth', block:'nearest'});
+    syncTimed(cardsEl, 'ecard');
   });
   es.addEventListener('done', setDoneState);
   es.addEventListener('error', e => {
@@ -179,6 +185,27 @@ function start(){
     if (es) { es.close(); es = null; }
   };
 }
+// ---- 时间同步:播放到时间戳才显示对应信息,当前项高亮 ----
+function syncTimed(cont, cls){
+  const now = document.getElementById('vid').currentTime || 0;
+  let last = null;
+  for (const el of cont.children) {
+    if (!(el.classList && el.classList.contains(cls))) continue;
+    const t = parseFloat(el.dataset.t);
+    const show = isNaN(t) ? true : t <= now;
+    el.classList.toggle('pending', !show);
+    el.classList.remove('cur');
+    if (show) last = el;
+  }
+  if (last) {
+    last.classList.add('cur');
+    if (cont.dataset.cur !== last.dataset.t) {
+      cont.dataset.cur = last.dataset.t;
+      last.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  } else delete cont.dataset.cur;
+}
+function syncAll(){ syncTimed(cardsEl, 'ecard'); syncTimed(trEl, 'tr'); }
 document.getElementById('vid').addEventListener('play', start);
 document.getElementById('vid').addEventListener('error', () => {
   statusEl.textContent = '⚠ video failed to load — check clip file';
@@ -367,6 +394,9 @@ function paint(){
   if (TELO.draft) drawStroke(teloCtx, TELO.draft, 1);
 }
 vid.addEventListener('timeupdate', paint);
+vid.addEventListener('timeupdate', syncAll);
+vid.addEventListener('seeked', syncAll);
+vid.addEventListener('loadedmetadata', () => { syncAll(); paint(); });
 vid.addEventListener('seeked', paint);
 vid.addEventListener('pause', paint);
 async function loadAnns(){
