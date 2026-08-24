@@ -86,7 +86,7 @@ def main() -> None:
 
     cloud_names = {f["name"]: f for f in storage.list_folder(vault_id) if f["name"].lower().endswith(".mp4")}
     poster_names = {f["name"] for f in storage.list_folder(poster_id)}
-    missing = [n for n in cloud_names if n not in poster_names]
+    missing = [n for n in cloud_names if n[:-4] + ".jpg" not in poster_names]
     missing_vid = [n for n in local_vault if n not in cloud_names]
 
     entries = []
