@@ -63,7 +63,7 @@ def not_found(_: Exception) -> tuple[str, int]:
 
 @app.errorhandler(413)
 def too_large(_: Exception) -> tuple[str, int]:
-    return _err_page(413, "file too large — 300MB max")
+    return _err_page(413, "file too large - 300MB max")
 
 
 @app.errorhandler(OSError)
@@ -185,7 +185,7 @@ def api_report(clip_id: str) -> Response:
     mode = request.args.get("mode") or os.environ.get("COACH_MODE", "replay")
     result = report_mod.build_report(clip_id, mode, _cfg())
     if result is None:
-        return jsonify(error="no cards yet — run the stream first"), 404
+        return jsonify(error="no cards yet - run the stream first"), 404
     return jsonify(result)
 
 

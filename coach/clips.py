@@ -137,7 +137,7 @@ def _cloud_clip_dict(clip_id: str, entry: dict) -> dict:
     technique, player, year = parse_stem(clip_id)
     title = entry.get("title")
     if not title and entry.get("source") != "upload":
-        title = f"{player.title()} — {technique.title()} ({year})"
+        title = f"{player.title()} - {technique.title()} ({year})"
     return {
         "id": clip_id,
         "file": clip_id + ".mp4",
@@ -192,7 +192,7 @@ def get_clip(clip_id: str) -> dict | None:
     return {
         "id": clip_id,
         "file": clip_id + ".mp4",
-        "title": f"{player.title()} — {technique.title()} ({year})",
+        "title": f"{player.title()} - {technique.title()} ({year})",
         "technique": technique,
         "player": player,
         "year": year,

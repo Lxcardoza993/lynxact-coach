@@ -238,7 +238,7 @@ def _run_tool(name: str, args: dict) -> tuple[bool, dict | list]:
                 "duration": data["duration"],
                 "cv_context": data.get("cv_context"),
                 "transcript": data.get("transcript", [])[:12],
-                "event_cards": cards or "no cards yet — run the analysis stream first (press play)",
+                "event_cards": cards or "no cards yet - run the analysis stream first (press play)",
             }
         up = get_upload(clip_id)
         if up:
@@ -246,7 +246,7 @@ def _run_tool(name: str, args: dict) -> tuple[bool, dict | list]:
                 "clip": clip_id,
                 "title": up["title"],
                 "duration": up.get("duration", 0),
-                "note": "uploaded clip — run the live stream first to generate cards",
+                "note": "uploaded clip - run the live stream first to generate cards",
                 "event_cards": _clip_cards(clip_id) or None,
             }
         return False, {"error": f"clip {clip_id} not found"}
@@ -369,7 +369,7 @@ def chat(clip_id: str, message: str, history: list[dict] | None, max_tool_rounds
             # to a reply, not raise through /api/agent/chat -> 500. claude.live_events
             # defends its model call the same way via the broad live_events try.
             logger.warning("agent model call failed: %s", exc)
-            reply = "The analysis service is unavailable right now — please retry in a moment."
+            reply = "The analysis service is unavailable right now - please retry in a moment."
             return {"reply": reply, "tool_trace": trace}
         # Model output is external/untrusted: guard malformed tool_calls
         # (missing function/id) so a bad response can't KeyError the loop.
@@ -407,7 +407,7 @@ def chat(clip_id: str, message: str, history: list[dict] | None, max_tool_rounds
                 "content": json.dumps(payload, ensure_ascii=False)[:6000],
             })
     return {
-        "reply": "I could not finish that in the allowed rounds — ask me again, or narrow the question.",
+        "reply": "I could not finish that in the allowed rounds - ask me again, or narrow the question.",
         "tool_trace": trace,
     }
 

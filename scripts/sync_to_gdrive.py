@@ -100,7 +100,7 @@ def main() -> None:
         duration = ffprobe_duration(local_path) if os.path.exists(local_path) else 0.0
         entries.append({
             "id": clip_id,
-            "title": f"{player.title()} — {technique.title()} ({year})",
+            "title": f"{player.title()} - {technique.title()} ({year})",
             "duration": round(duration, 2),
             "file_id": f"{cloud_names[name]['id']}",
         })

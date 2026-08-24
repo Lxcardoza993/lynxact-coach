@@ -1,91 +1,254 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>LynxAct Coach — Live Tactical Analysis</title>
+<title>LynxAct Coach</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  :root { --bg:#0d1117; --panel:#161b22; --line:#30363d; --fg:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --gold:#f2cc60; }
+  /* ---- design tokens (shared with coach.html) ----
+     shape lock: cards/panes 12px | controls 8px | chips pill
+     accent: ONE signal-green; gold stays semantic (top moments),
+     ok/warn/bad are status colors, not accents. dark-only theme. */
+  :root {
+    --bg:#0a0e14; --bg2:#0d121a; --panel:#111722; --panel2:#161d2a;
+    --line:#222c3b; --line2:#2f3b4e;
+    --fg:#e9eff7; --dim:#93a6bc; --faint:#7d92a8;
+    --acc:#3ee07f; --acc-ink:#04180c; --acc-dim:rgba(62,224,127,.14);
+    --gold:#ffd166; --ok:#4ade80; --warn:#fbbf24; --bad:#ff6b6b;
+    --r-card:12px; --r-ctl:8px;
+    --font-sans:-apple-system,"SF Pro Text","Segoe UI",Roboto,"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    --font-mono:ui-monospace,"SF Mono","Cascadia Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,"Segoe UI",Roboto,"Noto Sans SC",sans-serif; }
-  header { padding:28px 32px 12px; }
-  h1 { margin:0; font-size:26px; letter-spacing:.5px; }
-  h1 .x { color:var(--acc); }
-  .sub { color:var(--dim); margin-top:6px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; padding:20px 32px 40px; }
-  .card { position:relative; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:0 0 14px; transition:border-color .15s; display:block; overflow:hidden; }
-  .card:hover { border-color:var(--acc); }
-  .card.baked { border-color:var(--gold); }
-  .thumb { display:block; width:100%; height:132px; object-fit:cover; background:linear-gradient(135deg,#1f2a3a,#161b22); border:0; }
-  .thumb.ph { display:flex; align-items:center; justify-content:center; font-size:44px; font-weight:800; color:#4d5a68; }
-  .cardlink { display:block; text-decoration:none; color:var(--fg); padding:12px 16px 0; }
+  html { color-scheme:dark; }
+  body {
+    margin:0; background:
+      radial-gradient(1100px 420px at 72% -180px, rgba(62,224,127,.075), transparent 60%),
+      var(--bg);
+    color:var(--fg); font:15px/1.55 var(--font-sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  a { color:var(--acc); }
+  button { font-family:inherit; }
+  :focus-visible { outline:2px solid var(--acc); outline-offset:2px; border-radius:4px; }
+
+  /* ---- top bar ---- */
+  .topbar {
+    display:flex; align-items:center; gap:14px;
+    padding:0 28px; height:60px; border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+    background:rgba(10,14,20,.88); backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  .brand { font-size:17px; font-weight:800; letter-spacing:.2px; white-space:nowrap; }
+  .brand .x { color:var(--acc); }
+  .brand-tag {
+    font-family:var(--font-mono); font-size:10px; letter-spacing:.16em; font-weight:600;
+    color:var(--dim); border:1px solid var(--line2); border-radius:999px; padding:2px 10px;
+  }
+  .topstat { margin-left:auto; font-family:var(--font-mono); font-size:12px; color:var(--dim); }
+  .topstat b { color:var(--acc); font-weight:600; }
+
+  /* ---- hero / command bar ---- */
+  .hero { padding:36px 28px 8px; max-width:1500px; margin:0 auto; }
+  .hero h1 { margin:0; font-size:clamp(26px,3.4vw,38px); letter-spacing:-.02em; line-height:1.15; }
+  .hero .sub { margin:10px 0 0; color:var(--dim); font-size:14px; max-width:80ch; }
+  .cmdbar {
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    margin-top:22px; padding:12px 14px;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--r-card);
+  }
+  .cmdbar .hint { margin-left:auto; color:var(--faint); font-size:12px; }
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    height:36px; padding:0 18px; border-radius:var(--r-ctl);
+    font-size:14px; font-weight:700; cursor:pointer; text-decoration:none;
+    border:1px solid transparent; transition:transform .12s var(--ease), background .12s, border-color .12s, box-shadow .12s;
+  }
+  .btn:active { transform:translateY(1px) scale(.985); }
+  .btn.primary { background:var(--acc); color:var(--acc-ink); box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 6px 18px -6px rgba(62,224,127,.45); }
+  .btn.primary:hover { background:#54ef90; }
+  .btn.ghost { background:var(--bg2); color:var(--fg); border-color:var(--line2); }
+  .btn.ghost:hover { border-color:var(--acc); color:var(--acc); }
+  .btn.danger { background:transparent; color:var(--bad); border-color:rgba(255,107,107,.45); }
+  .btn.danger:hover { border-color:var(--bad); background:rgba(255,107,107,.08); }
+  .filebtn { overflow:hidden; }
+  .filebtn input[type=file] { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+  input[type=text], input[type=number] {
+    background:var(--bg); border:1px solid var(--line2); border-radius:var(--r-ctl);
+    color:var(--fg); padding:7px 10px; font:inherit; font-size:13px;
+  }
+  input:focus { border-color:var(--acc); outline:none; }
+
+  .err {
+    display:flex; gap:10px; align-items:center;
+    margin:14px 28px 0; padding:10px 14px; border-radius:var(--r-ctl);
+    background:rgba(255,107,107,.09); border:1px solid rgba(255,107,107,.4); color:var(--bad); font-size:13px;
+  }
+
+  /* ---- library ---- */
+  .grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(272px,1fr));
+    gap:16px; padding:22px 28px 52px; max-width:1500px; margin:0 auto;
+  }
+  .card {
+    position:relative; background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--r-card); overflow:hidden;
+    transition:border-color .18s var(--ease), transform .18s var(--ease), box-shadow .18s var(--ease);
+  }
+  .card:hover { border-color:var(--line2); transform:translateY(-2px); box-shadow:0 14px 34px -14px rgba(0,0,0,.6); }
+  .card.baked { border-color:rgba(255,209,102,.4); }
+  .card.baked:hover { border-color:var(--gold); }
+  .frame { position:relative; aspect-ratio:16/9; background:linear-gradient(140deg,var(--panel2),#0d1320); overflow:hidden; }
+  .thumb { display:block; width:100%; height:100%; object-fit:cover; transition:transform .3s var(--ease); }
+  .frame:hover .thumb { transform:scale(1.045); }
+  .thumb.ph {
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-size:56px; font-weight:800; color:#233247;
+  }
+  .play {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-46%) scale(.9);
+    width:44px; height:44px; border-radius:999px; display:flex; align-items:center; justify-content:center;
+    background:rgba(10,14,20,.68); border:1px solid rgba(255,255,255,.28); color:var(--acc);
+    font-size:14px; opacity:0; transition:opacity .18s var(--ease), transform .18s var(--ease);
+    pointer-events:none;
+  }
+  .cardlink:hover .play { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .cardlink { display:block; text-decoration:none; color:var(--fg); }
+  .body { padding:12px 14px 14px; }
+  .t {
+    font-weight:700; font-size:14.5px; line-height:1.4; color:var(--fg);
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    transition:color .15s;
+  }
   .cardlink:hover .t { color:var(--acc); }
-  .t { font-weight:600; transition:color .15s; }
-  .m { color:var(--dim); font-size:12px; margin-top:4px; word-break:break-all; }
-  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:99px; margin:10px 16px 0; border:1px solid var(--line); color:var(--dim); }
-  .baked .badge { color:var(--gold); border-color:var(--gold); }
-  .cdel { position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:7px; border:1px solid var(--line); background:rgba(13,17,23,.75); color:var(--dim); font-size:13px; line-height:1; cursor:pointer; opacity:0; transition:opacity .15s; }
-  .card:hover .cdel { opacity:1; }
-  .cdel:hover { color:#f85149; border-color:#f85149; }
-  .cloudbar { margin:0 32px 6px; padding:12px 16px; background:var(--panel); border:1px solid var(--line); border-radius:10px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-  .pbtn { background:var(--acc); color:var(--bg); border:0; border-radius:6px; padding:6px 16px; font-weight:700; cursor:pointer; }
-  .pbtn:hover { filter:brightness(1.1); }
-  #pickerWrap { display:none; position:fixed; inset:0; background:rgba(1,4,9,.72); z-index:50; align-items:center; justify-content:center; }
-  #pickerBox { width:min(640px,92vw); max-height:78vh; background:var(--panel); border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; }
-  #pickerHead { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .m { margin-top:7px; font-family:var(--font-mono); font-size:11.5px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .m .dur { color:var(--dim); }
+  .badge {
+    display:inline-block; margin-top:10px; font-size:10px; letter-spacing:.12em; font-weight:800;
+    padding:3px 10px; border-radius:999px; border:1px solid var(--line2); color:var(--faint);
+  }
+  .baked .badge { color:var(--gold); border-color:rgba(255,209,102,.5); background:rgba(255,209,102,.08); }
+  .cdel {
+    position:absolute; top:8px; right:8px; width:30px; height:30px; border-radius:999px;
+    border:1px solid var(--line2); background:rgba(10,14,20,.72); color:var(--dim);
+    font-size:13px; line-height:1; cursor:pointer; opacity:0; transition:opacity .15s, color .15s, border-color .15s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .card:hover .cdel, .cdel:focus-visible { opacity:1; }
+  .cdel:hover { color:var(--bad); border-color:var(--bad); }
+  @media (hover:none) { .cdel { opacity:.85; } }
+  .empty {
+    grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--dim);
+    background:var(--panel); border:1px dashed var(--line2); border-radius:var(--r-card);
+  }
+  .empty b { color:var(--fg); }
+
+  /* ---- cloud picker modal ---- */
+  #pickerWrap { display:none; position:fixed; inset:0; background:rgba(4,7,11,.74); z-index:50; align-items:center; justify-content:center; padding:18px; }
+  #pickerBox {
+    width:min(660px,94vw); max-height:82vh; background:var(--panel);
+    border:1px solid var(--line2); border-radius:var(--r-card); box-shadow:0 30px 80px -20px rgba(0,0,0,.75);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  #pickerHead { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:15px 18px; border-bottom:1px solid var(--line); }
+  #pickerHead b { font-size:14.5px; }
+  #pickerHead b i { font-style:normal; color:var(--acc); }
   #pickerList { overflow:auto; padding:10px; }
-  .prow { display:flex; gap:12px; align-items:center; padding:8px; border-radius:8px; cursor:pointer; }
-  .prow:hover { background:#1c2128; }
-  .pthumb { width:104px; height:60px; object-fit:cover; border-radius:6px; background:#1f2a3a; flex:0 0 auto; border:0; }
-  .pthumb.pph { display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; color:#4d5a68; }
-  .pt-t { font-weight:600; }
-  .pt-m { color:var(--dim); font-size:12px; margin-top:2px; word-break:break-all; }
+  .prow {
+    display:flex; gap:12px; align-items:center; padding:9px; border-radius:var(--r-card);
+    cursor:pointer; border:1px solid transparent; transition:background .13s, border-color .13s;
+  }
+  .prow:hover { background:var(--panel2); border-color:var(--line); }
+  .pthumb { width:118px; height:67px; object-fit:cover; border-radius:var(--r-ctl); background:var(--panel2); flex:0 0 auto; border:1px solid var(--line); }
+  .pthumb.pph { display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:24px; font-weight:800; color:#233247; }
+  .pt { min-width:0; }
+  .pt-t { font-weight:700; font-size:14px; }
+  .pt-m { color:var(--faint); font-family:var(--font-mono); font-size:11.5px; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .xbtn {
+    width:30px; height:30px; border-radius:999px; border:1px solid var(--line2);
+    background:transparent; color:var(--dim); cursor:pointer; font-size:13px;
+  }
+  .xbtn:hover { color:var(--bad); border-color:var(--bad); }
+
+  @media (max-width:640px) {
+    .topbar, .hero { padding-left:16px; padding-right:16px; }
+    .grid { padding-left:16px; padding-right:16px; }
+    .cmdbar .hint { margin-left:0; width:100%; }
+    .brand-tag { display:none; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    *, *::before, *::after { animation:none !important; transition:none !important; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>Lynx<span class="x">Act</span> Coach</h1>
-  <div class="sub">Live tactical analysis — commentary transcription × CV fusion annotations × Claude event cards · 实时战术分析 · 点✕删除不想要的候选</div>
+<header class="topbar">
+  <span class="brand">Lynx<span class="x">Act</span> Coach</span>
+  <span class="brand-tag">TACTICAL FILM ROOM</span>
+  <span class="topstat"><b>{{ clips | length }}</b> CLIPS ON TAPE</span>
 </header>
-{% if err %}
-<div style="margin:0 32px 10px;padding:10px 16px;background:#3d1d1d;border:1px solid #f85149;border-radius:8px;color:#ffa198">⚠ {{ err }}</div>
-{% endif %}
-<form action="/api/upload" method="post" enctype="multipart/form-data"
-      style="margin:0 32px 6px;padding:12px 16px;background:var(--panel);border:1px dashed var(--line);border-radius:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-  <b>Analyze your own clip</b>
-  <input type="file" name="file" accept="video/mp4" required style="color:var(--dim)">
-  <button type="submit" style="background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:6px 16px;font-weight:700;cursor:pointer">Upload &amp; go LIVE →</button>
-  <span style="color:var(--dim);font-size:12px">mp4 · live transcription + Claude analysis (needs Speechmatics key)</span>
-</form>
-<div class="cloudbar">
-  <b>From library</b>
-  <button type="button" class="pbtn" id="pickBtn">☁ 从云端选择 →</button>
-  <span style="color:var(--dim);font-size:12px">pick any clip straight from the cloud library — uploads land there too</span>
-</div>
-<div id="pickerWrap">
+
+<main>
+  <section class="hero">
+    <h1>Pick a clip, break it down.</h1>
+    <p class="sub">Live tactical analysis: commentary transcription, CV-fusion annotations and Claude event cards.
+      选一个片段开始实时分析:解说转写 + 视觉融合标注 + AI 事件卡。</p>
+    <div class="cmdbar">
+      <form action="/api/upload" method="post" enctype="multipart/form-data" style="display:contents">
+        <label class="btn primary filebtn">
+          <input type="file" name="file" accept="video/mp4" required>
+          Upload &amp; analyze
+        </label>
+      </form>
+      <button type="button" class="btn ghost" id="pickBtn">Library cloud ▾</button>
+      <span class="hint">MP4 · live transcription + Claude analysis (needs Speechmatics key)</span>
+    </div>
+  </section>
+
+  {% if err %}
+  <div class="err">⚠ {{ err }}</div>
+  {% endif %}
+
+  <div class="grid">
+  {% for c in clips %}
+    <div class="card {% if c.baked %}baked{% endif %}">
+      <a class="cardlink" href="/coach/{{ c.id }}">
+        <div class="frame">
+          {% if c.poster %}<img class="thumb" src="{{ c.poster }}" alt="" loading="lazy" width="640" height="360">
+          {% else %}<div class="thumb ph">{{ c.title[0] | upper }}</div>{% endif %}
+          <span class="play">▶</span>
+        </div>
+        <div class="body">
+          <div class="t">{{ c.title }}</div>
+          <div class="m">{{ c.id }}.mp4{% if c.duration %} <span class="dur">· {{ c.duration | round(1) }}s</span>{% endif %}</div>
+          {% if c.baked %}<span class="badge">▶ DEMO READY</span>{% else %}<span class="badge">CLIP</span>{% endif %}
+        </div>
+      </a>
+      <button class="cdel" data-id="{{ c.id }}" data-title="{{ c.title }}" title="delete this clip" aria-label="delete {{ c.title }}">✕</button>
+    </div>
+  {% else %}
+    <div class="empty"><b>Film room is empty.</b><br>上传一个片段,或者从云端素材库挑一支开始分析。</div>
+  {% endfor %}
+  </div>
+</main>
+
+<div id="pickerWrap" role="dialog" aria-label="云端素材库">
   <div id="pickerBox">
     <div id="pickerHead">
-      <b>☁ 云端素材库 — 选择一个开始分析</b>
-      <button type="button" class="cdel" id="pickerClose" style="position:static;opacity:1" title="close">✕</button>
+      <b>云端素材库 <i>·</i> 选择一个开始分析</b>
+      <button type="button" class="xbtn" id="pickerClose" aria-label="close">✕</button>
     </div>
     <div id="pickerList"></div>
   </div>
 </div>
-<div class="grid">
-{% for c in clips %}
-  <div class="card {% if c.baked %}baked{% endif %}">
-    {% if c.poster %}<img class="thumb" src="{{ c.poster }}" alt="" loading="lazy">
-    {% else %}<div class="thumb ph">{{ c.title[0] | upper }}</div>{% endif %}
-    <a class="cardlink" href="/coach/{{ c.id }}">
-      <div class="t">{{ c.title }}</div>
-      <div class="m">{{ c.id }}.mp4{% if c.duration %} · {{ c.duration | round(1) }}s{% endif %}</div>
-      {% if c.baked %}<span class="badge">▶ DEMO READY</span>{% else %}<span class="badge">clip</span>{% endif %}
-    </a>
-    <button class="cdel" data-id="{{ c.id }}" data-title="{{ c.title }}" title="delete this clip">✕</button>
-  </div>
-{% endfor %}
-</div>
+
 <script>
+// pick a file from the styled label button → submit the upload form at once
+document.querySelector('.filebtn input[type=file]').addEventListener('change', function(){
+  this.form.requestSubmit();
+});
 function deleteClipBtn(btn, id, title, redirectTo){
   btn.addEventListener('click', async () => {
     const KEY = 'lynxact_admin_token';
@@ -106,7 +269,7 @@ function deleteClipBtn(btn, id, title, redirectTo){
 document.querySelectorAll('.card .cdel').forEach(b =>
   deleteClipBtn(b, b.dataset.id, b.dataset.title, '/'));
 
-// --- ☁ cloud library picker (rows built with DOM APIs — titles are user
+// --- cloud library picker (rows built with DOM APIs - titles are user
 // strings, so no innerHTML interpolation is ever applied to them) ---
 (function(){
   const wrap = document.getElementById('pickerWrap');
@@ -146,7 +309,7 @@ document.querySelectorAll('.card .cdel').forEach(b =>
         list.append(row);
       });
       if (!(d.clips || []).length) {
-        list.replaceChildren(el('div', 'pt-m', '库是空的 — 先在上方上传一个片,它就进云端了。'));
+        list.replaceChildren(el('div', 'pt-m', '库是空的:先在上方上传一个片,它就进云端了。'));
       }
     } catch(err) {
       list.replaceChildren();

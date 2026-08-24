@@ -53,7 +53,7 @@ def template_report(title: str, cards: list[dict], cv: dict | None) -> str:
     """零模型模板报告:时间线 + 高光时刻 + 类型分布 + 教练要点。"""
     # LLM cards may emit t/rating as strings; coerce so sort keys + :.1f never raise.
     cards = [{**c, "t": _num(c.get("t")), "rating": _num(c.get("rating"))} for c in cards]
-    lines = [f"# Tactical Report — {title}", ""]
+    lines = [f"# Tactical Report - {title}", ""]
     if cv:
         lines.append(
             f"**CV fusion**: {cv.get('fusion_label')} (conf {cv.get('confidence')})"
@@ -66,7 +66,7 @@ def template_report(title: str, cards: list[dict], cv: dict | None) -> str:
         spec = " ⚠speculative" if c.get("speculative") else ""
         lines.append(
             f"- **{c.get('t', 0):.1f}s** [{c.get('type', '?')}] "
-            f"{c.get('title', '')} — ★{c.get('rating', '?')}{spec}"
+            f"{c.get('title', '')} - ★{c.get('rating', '?')}{spec}"
         )
     top = [c for c in cards if isinstance(c.get("rating"), int | float) and c["rating"] >= 9]
     if top:

@@ -159,7 +159,7 @@ def test_template_report_has_sections():
     cards = [{"t": 1.0, "type": "goal", "title": "Strike", "rating": 9, "analysis": "top corner"}]
     cv = {"fusion_label": "run", "confidence": 0.9, "gold": "run"}
     md = template_report("Big Match", cards, cv)
-    assert "# Tactical Report — Big Match" in md
+    assert "# Tactical Report - Big Match" in md
     assert "## Event timeline" in md
     assert "## Top moments" in md
     assert "## Coaching takeaways" in md
@@ -168,7 +168,7 @@ def test_template_report_has_sections():
 
 def test_template_report_empty_cards_no_cv():
     md = template_report("Solo", [], None)
-    assert "# Tactical Report — Solo" in md
+    assert "# Tactical Report - Solo" in md
     assert "## Event timeline" in md
 
 

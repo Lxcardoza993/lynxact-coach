@@ -55,7 +55,7 @@ def test_build_report_replay_uses_template(tmp_path, monkeypatch):
     report.persist_card("c1", _card())
     res = report.build_report("c1", "replay", {})
     assert res["generated_by"] == "template"
-    assert "# Tactical Report — c1" in res["markdown"]
+    assert "# Tactical Report - c1" in res["markdown"]
     assert "Strike" in res["markdown"]
 
 

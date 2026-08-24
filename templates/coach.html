@@ -1,94 +1,262 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>{{ clip.title }} — LynxAct Coach</title>
+<title>{{ clip.title }} | LynxAct Coach</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  :root { --bg:#0d1117; --panel:#161b22; --line:#30363d; --fg:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --gold:#f2cc60; --ok:#3fb950; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,"Segoe UI",Roboto,"Noto Sans SC",sans-serif; }
-  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
-  h1 { margin:0; font-size:19px; }
-  .tag { font-size:12px; padding:2px 10px; border-radius:99px; border:1px solid var(--line); color:var(--dim); }
-  .tag.gold { color:var(--gold); border-color:var(--gold); }
-  .tag.ok { color:var(--ok); border-color:var(--ok); }
-  main { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:14px; padding:14px 20px; align-items:start; }
-  #vidCol { grid-column:1; grid-row:1 / span 2; min-width:0; }
-  video { width:100%; height:auto; min-width:0; background:#000; border-radius:10px; border:1px solid var(--line); }
-  .pane { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; height:52vh; overflow-y:auto; }
-  .pane h2 { margin:0 0 8px; font-size:13px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
-  .tr { padding:5px 0; border-bottom:1px dashed #21262d; font-size:14px; }
-  .tr .ts { color:var(--acc); font-variant-numeric:tabular-nums; margin-right:8px; font-size:12px; }
-  /* 时间同步:未播放到的时间戳信息不显示 */
-  .ecard.pending, .tr.pending { display:none; }
-  .ecard.cur { border-color:var(--acc); box-shadow:0 0 0 1px rgba(88,166,255,.35); }
-  .tr.cur .ts { color:var(--gold); }
-  #cards { grid-column:2; grid-row:1; display:flex; flex-direction:column; gap:12px; height:52vh; max-height:none; min-height:120px; overflow-y:auto; }
-  #commentary { grid-column:2; grid-row:2; }
-  @media (max-width:900px) {
-    main { grid-template-columns:1fr; }
-    #vidCol, #cards, #commentary { grid-column:1; grid-row:auto; }
-    #cards { height:auto; max-height:60vh; }
+  /* ---- design tokens (shared with index.html) ---- */
+  :root {
+    --bg:#0a0e14; --bg2:#0d121a; --panel:#111722; --panel2:#161d2a;
+    --line:#222c3b; --line2:#2f3b4e;
+    --fg:#e9eff7; --dim:#93a6bc; --faint:#7d92a8;
+    --acc:#3ee07f; --acc-ink:#04180c; --acc-dim:rgba(62,224,127,.14);
+    --gold:#ffd166; --ok:#4ade80; --warn:#fbbf24; --bad:#ff6b6b;
+    --r-card:12px; --r-ctl:8px;
+    --font-sans:-apple-system,"SF Pro Text","Segoe UI",Roboto,"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    --font-mono:ui-monospace,"SF Mono","Cascadia Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --ease:cubic-bezier(.16,1,.3,1);
   }
-  .ecard { border:1px solid var(--line); border-left:3px solid var(--acc); border-radius:8px; padding:10px 14px; background:#0d1420; animation:cardIn .45s cubic-bezier(.16,1,.3,1) both; }
-  @keyframes cardIn { from { opacity:0; transform:translateY(14px) scale(.98); } to { opacity:1; transform:none; } }
-  .ecard.hot { border-left-color:var(--gold); box-shadow:0 0 0 1px rgba(242,204,96,.25), 0 4px 18px rgba(242,204,96,.08); }
-  .ecard.hot .type { background:var(--gold); }
-  .tr { animation:trIn .3s ease both; }
+  * { box-sizing:border-box; }
+  html { color-scheme:dark; }
+  body {
+    margin:0; color:var(--fg); font:14px/1.55 var(--font-sans);
+    background:
+      radial-gradient(1100px 420px at 88% -180px, rgba(62,224,127,.06), transparent 60%),
+      var(--bg);
+    -webkit-font-smoothing:antialiased;
+  }
+  a { color:var(--acc); }
+  button { font-family:inherit; }
+  :focus-visible { outline:2px solid var(--acc); outline-offset:2px; border-radius:4px; }
+
+  /* ---- buttons (one system) ---- */
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    height:36px; padding:0 16px; border-radius:var(--r-ctl);
+    font-size:13.5px; font-weight:700; cursor:pointer; text-decoration:none;
+    border:1px solid transparent; white-space:nowrap;
+    transition:transform .12s var(--ease), background .12s, border-color .12s, color .12s, box-shadow .12s, opacity .12s;
+  }
+  .btn.sm { height:31px; padding:0 13px; font-size:12.5px; }
+  .btn:active { transform:translateY(1px) scale(.985); }
+  .btn.primary { background:var(--acc); color:var(--acc-ink); box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 6px 16px -6px rgba(62,224,127,.4); }
+  .btn.primary:hover:not(:disabled) { background:#54ef90; }
+  .btn.ghost { background:var(--bg2); color:var(--fg); border-color:var(--line2); }
+  .btn.ghost:hover { border-color:var(--acc); color:var(--acc); }
+  .btn.gold { background:transparent; color:var(--gold); border-color:rgba(255,209,102,.45); }
+  .btn.gold:hover:not(:disabled) { border-color:var(--gold); background:rgba(255,209,102,.08); }
+  .btn.danger { background:transparent; color:var(--bad); border-color:rgba(255,107,107,.45); }
+  .btn.danger:hover { border-color:var(--bad); background:rgba(255,107,107,.08); }
+  .btn:disabled { opacity:.38; cursor:not-allowed; pointer-events:none; }
+  .btn.on { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
+
+  /* ---- top bar ---- */
+  .topbar {
+    display:flex; align-items:center; gap:12px; height:60px; padding:0 22px;
+    border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20;
+    background:rgba(10,14,20,.88); backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  .back {
+    width:32px; height:32px; flex:0 0 auto; border-radius:var(--r-ctl);
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line2); color:var(--dim); text-decoration:none; font-size:14px;
+  }
+  .back:hover { color:var(--acc); border-color:var(--acc); }
+  .topbar h1 {
+    margin:0; font-size:15px; font-weight:700; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .tag {
+    flex:0 0 auto; font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; font-weight:700;
+    padding:3px 10px; border-radius:999px; border:1px solid var(--line2); color:var(--dim);
+  }
+  .tag.gold { color:var(--gold); border-color:rgba(255,209,102,.5); background:rgba(255,209,102,.07); }
+  .tag.ok { color:var(--ok); border-color:rgba(74,222,128,.45); background:rgba(74,222,128,.07); }
+  #status {
+    margin-left:auto; display:flex; align-items:center; gap:8px; flex:0 0 auto;
+    font-family:var(--font-mono); font-size:11.5px; color:var(--dim); min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  #status::before {
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--faint); flex:0 0 auto;
+  }
+  #status[data-state="live"]::before { background:var(--acc); animation:pulse 1.6s var(--ease) infinite; }
+  #status[data-state="done"]::before { background:var(--ok); }
+  #status[data-state="err"]::before { background:var(--bad); }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+
+  /* ---- action toolbar ---- */
+  .toolbar {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:10px 22px; border-bottom:1px solid var(--line);
+    position:sticky; top:60px; z-index:19; background:rgba(10,14,20,.9);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  }
+  .gsep { width:1px; height:22px; background:var(--line2); margin:0 2px; }
+  .algroup { display:flex; align-items:center; gap:8px; }
+  .algroup label { font-family:var(--font-mono); font-size:10px; letter-spacing:.14em; color:var(--faint); font-weight:700; }
+  .algroup input {
+    width:70px; background:var(--bg); border:1px solid var(--line2); border-radius:var(--r-ctl);
+    color:var(--fg); padding:5px 8px; font:12px var(--font-mono);
+  }
+  .algroup input:focus { border-color:var(--acc); outline:none; }
+  .spacer { margin-left:auto; }
+
+  /* ---- main grid ---- */
+  main { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:14px; padding:14px 22px 30px; align-items:start; }
+  #vidCol { grid-column:1; grid-row:1 / span 2; min-width:0; }
+  #commentary { grid-column:2; grid-row:2; }
+  #cards { grid-column:2; grid-row:1; }
+  video { width:100%; height:auto; min-width:0; background:#000; border-radius:var(--r-card); border:1px solid var(--line); }
+  .cv { font-size:12px; color:var(--faint); margin-top:8px; }
+  .cv b { color:var(--dim); font-weight:600; }
+
+  /* ---- panes ---- */
+  .pane {
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--r-card);
+    display:flex; flex-direction:column; min-height:0;
+  }
+  .pane { height:52vh; overflow:hidden; }
+  #cards { height:52vh; display:flex; flex-direction:column; gap:10px; overflow-y:auto; padding:12px; background:transparent; border:0; }
+  .phead {
+    display:flex; align-items:center; gap:10px; padding:11px 14px; flex:0 0 auto;
+    border-bottom:1px solid var(--line);
+  }
+  .phead h2 {
+    margin:0; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.16em;
+    color:var(--dim); text-transform:uppercase; font-weight:700;
+  }
+  .phead .n { font-family:var(--font-mono); font-size:11px; color:var(--faint); }
+  #transcript { overflow-y:auto; padding:6px 14px 12px; }
+
+  /* transcript rows */
+  .tr { padding:6px 0; border-bottom:1px solid var(--line); font-size:13.5px; color:var(--fg); }
+  .tr .ts { color:var(--acc); font-family:var(--font-mono); font-size:11.5px; margin-right:9px; font-variant-numeric:tabular-nums; }
+  .ecard.pending, .tr.pending { display:none; }
+  .tr.cur { background:rgba(62,224,127,.05); margin:0 -14px; padding-left:14px; padding-right:14px; }
+  .tr.cur .ts { color:var(--gold); }
+  .tr.cur { animation:trIn .3s var(--ease) both; }
   @keyframes trIn { from { opacity:0; transform:translateX(8px); } to { opacity:1; transform:none; } }
-  @media (prefers-reduced-motion: reduce) { .ecard, .tr { animation:none; } }
-  .ecard .head { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
-  .ecard .type { font-size:11px; color:var(--bg); background:var(--acc); border-radius:4px; padding:1px 7px; font-weight:700; text-transform:uppercase; }
-  .ecard .title { font-weight:600; }
-  .ecard .ts { color:var(--acc); font-size:12px; font-variant-numeric:tabular-nums; }
-  .ecard .rating { margin-left:auto; color:var(--gold); font-weight:700; }
-  .ecard .an { color:#c9d1d9; margin-top:6px; font-size:14px; }
-  .ecard .players { margin-top:6px; font-size:12px; color:var(--dim); }
-  .ecard .spec { margin-top:6px; font-size:12px; color:var(--gold); }
-  .cv { font-size:12px; color:var(--dim); margin-top:4px; }
-  .cv b { color:var(--fg); }
-  #status { margin-left:auto; font-size:12px; color:var(--dim); }
-  /* ---- Telestration 画板 ---- */
+
+  /* event cards */
+  .ecard {
+    flex:0 0 auto; border:1px solid var(--line); border-left:3px solid var(--acc);
+    border-radius:10px; padding:10px 13px; background:var(--panel);
+    animation:cardIn .4s var(--ease) both;
+  }
+  @keyframes cardIn { from { opacity:0; transform:translateY(12px) scale(.985); } to { opacity:1; transform:none; } }
+  .ecard.cur { border-color:var(--line2); border-left-color:var(--acc); box-shadow:0 0 0 1px rgba(62,224,127,.22); }
+  .ecard.hot { border-left-color:var(--gold); box-shadow:0 0 0 1px rgba(255,209,102,.18), 0 8px 22px -12px rgba(255,209,102,.35); }
+  .ecard .head { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; }
+  .ecard .type {
+    font-family:var(--font-mono); font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+    background:var(--acc-dim); color:var(--acc); border-radius:6px; padding:2px 8px;
+  }
+  .ecard.hot .type { background:rgba(255,209,102,.14); color:var(--gold); }
+  .ecard .title { font-weight:700; font-size:13.5px; }
+  .ecard .ts { color:var(--acc); font-family:var(--font-mono); font-size:11.5px; font-variant-numeric:tabular-nums; }
+  .ecard .rating { margin-left:auto; color:var(--gold); font-weight:800; font-size:12.5px; }
+  .ecard .an { color:var(--fg); opacity:.88; margin-top:6px; font-size:13px; }
+  .ecard .players { margin-top:6px; font-size:11px; color:var(--faint); font-family:var(--font-mono); }
+  .ecard .spec { margin-top:6px; font-size:11.5px; color:var(--warn); }
+
+  /* ---- telestration ---- */
   #vidWrap { position:relative; }
   #teloCv { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; }
   #vidWrap.telo #teloCv { pointer-events:auto; cursor:crosshair; }
-  #teloBar { display:none; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px; }
+  #teloBar { display:none; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px; padding:8px;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--r-card); }
   #teloBar.on { display:flex; }
-  #teloBar button { background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:3px 12px; font:inherit; font-size:12px; cursor:pointer; }
-  #teloBar button.active { background:var(--acc); color:var(--bg); border-color:var(--acc); }
-  #teloBar .sw { width:18px; height:18px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; }
-  #teloBar .sw.active { border-color:var(--fg); }
-  #teloStatus { color:var(--dim); font-size:12px; margin-left:auto; }
-  #annotList { margin-top:8px; display:flex; flex-direction:column; gap:4px; }
+  .tbtn {
+    background:var(--bg2); color:var(--dim); border:1px solid var(--line2); border-radius:var(--r-ctl);
+    padding:4px 11px; font:12.5px var(--font-sans); font-weight:600; cursor:pointer;
+  }
+  .tbtn:hover { color:var(--fg); border-color:var(--acc); }
+  .tbtn.active { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); font-weight:700; }
+  .sw { width:18px; height:18px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; }
+  .sw.active { border-color:var(--fg); }
+  #teloStatus { color:var(--faint); font-family:var(--font-mono); font-size:11px; margin-left:auto; }
+  #annotList { margin-top:10px; display:flex; flex-direction:column; gap:5px; }
   #annotList:empty { display:none; }
-  .arow { display:flex; gap:10px; align-items:center; font-size:12px; color:var(--dim); border:1px solid var(--line); border-radius:6px; padding:4px 10px; background:var(--panel); }
-  .arow .ats { color:var(--acc); font-variant-numeric:tabular-nums; cursor:pointer; font-weight:700; }
+  .arow {
+    display:flex; gap:10px; align-items:center; font-size:12px; color:var(--dim);
+    border:1px solid var(--line); border-radius:var(--r-ctl); padding:5px 11px; background:var(--panel);
+  }
+  .arow .ats { color:var(--acc); font-family:var(--font-mono); font-variant-numeric:tabular-nums; cursor:pointer; font-weight:700; }
   .arow .adel { margin-left:auto; color:var(--dim); cursor:pointer; font-weight:700; }
-  .arow .adel:hover { color:#f85149; }
+  .arow .adel:hover { color:var(--bad); }
+
+  /* ---- coach chat ---- */
+  #coachPane { grid-column:1 / -1; height:46vh; }
+  #coachMsgs { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:12px 14px; }
+  .bubble {
+    max-width:82%; padding:9px 13px; border-radius:12px; font-size:13.5px; line-height:1.6;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .bubble.user { align-self:flex-end; background:var(--acc); color:var(--acc-ink); border-bottom-right-radius:4px; }
+  .bubble.assistant { align-self:flex-start; background:var(--panel2); border:1px solid var(--line); border-bottom-left-radius:4px; }
+  .bubble .trace { margin-top:8px; font-size:11.5px; color:var(--gold); border-top:1px solid var(--line); padding-top:6px; font-family:var(--font-mono); }
+  .chatbar { display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--line); }
+  .chatbar input {
+    flex:1; background:var(--bg); border:1px solid var(--line2); border-radius:var(--r-ctl);
+    color:var(--fg); padding:9px 12px; font:inherit;
+  }
+  .chatbar input:focus { border-color:var(--acc); outline:none; }
+  .chatbar input::placeholder { color:var(--faint); }
+
+  /* ---- report ---- */
+  #reportPane { grid-column:1 / -1; display:none; height:auto; max-height:72vh; }
+  #reportBody { overflow-y:auto; padding:6px 16px 16px; font-size:14px; }
+  #reportBody h2 { font-size:19px; margin:18px 0 8px; }
+  #reportBody h3 { font-size:15.5px; margin:14px 0 6px; }
+  #reportBody h4 { font-size:13.5px; margin:12px 0 4px; color:var(--acc); }
+  #reportBody p { margin:7px 0; color:var(--fg); opacity:.9; }
+  #reportBody li { margin:3px 0; }
+  #reportBody b { color:var(--gold); }
+
+  @media (max-width:900px) {
+    main { grid-template-columns:1fr; padding:12px 14px 24px; }
+    #vidCol, #commentary, #cards { grid-column:1; grid-row:auto; }
+    #cards, .pane { height:auto; max-height:60vh; }
+    #coachPane { grid-column:1; height:60vh; }
+    .topbar { padding:0 12px; }
+    .toolbar { padding:8px 12px; top:60px; }
+    .spacer { display:none; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    *, *::before, *::after { animation:none !important; transition:none !important; }
+  }
 </style>
 </head>
 <body>
-<header>
+<header class="topbar">
+  <a class="back" href="/" title="back to library">←</a>
   <h1>{{ clip.title }}</h1>
-  <span class="tag gold">{% if clip.baked %}REPLAY · baked fallback{% else %}CLIP{% endif %}</span>
+  <span class="tag gold" title="baked fallback analysis">{% if clip.baked %}REPLAY{% else %}CLIP{% endif %}</span>
   {% if clip.cv_context %}
-  <span class="tag ok">CV fusion: {{ clip.cv_context.fusion_label }} ({{ '%.0f'|format(clip.cv_context.confidence * 100) }}%)</span>
+  <span class="tag ok">CV {{ clip.cv_context.fusion_label }} {{ '%.0f'|format(clip.cv_context.confidence * 100) }}%</span>
   {% endif %}
-  <span id="status">idle — press play</span>
-  <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)">
-    ⏱ align <input id="offsetIn" type="number" step="0.1" value="0"
-    style="width:62px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--fg);padding:3px 6px;font:inherit"> s
-    <button id="offsetSave" title="所有事件卡/解说整体平移,对齐素材片头或掐头去尾"
-    style="background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer">apply</button>
-  </span>
-  <a class="tag" href="?mode=live" style="text-decoration:none;cursor:pointer">▶ TRY LIVE (model-generated)</a>
-  <button id="reportBtn" disabled style="background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">📋 Full report</button>
-  <button id="exportBtn" disabled style="background:var(--panel);color:var(--gold);border:1px solid var(--gold);border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">🖼 Export PNG</button>
-  <button id="teloBtn" style="background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer">✏ Telestration</button>
-  <a class="tag" href="/" style="text-decoration:none;cursor:pointer">← all clips</a>
-  <button id="delBtn" title="删除这个剪辑(需要管理员口令)" style="background:var(--panel);color:#f85149;border:1px solid #f85149;border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer">🗑 delete</button>
+  <span id="status" data-state="idle">idle - press play</span>
 </header>
+
+<div class="toolbar">
+  <a id="liveBtn" class="btn sm ghost" href="?mode=live">Live →</a>
+  <button id="teloBtn" class="btn sm ghost" title="pause the video and draw arrows, lines and boxes anchored to the timeline">Telestration</button>
+  <span class="gsep"></span>
+  <button id="reportBtn" class="btn sm primary" disabled>Report</button>
+  <button id="exportBtn" class="btn sm gold" disabled>Export PNG</button>
+  <span class="gsep"></span>
+  <span class="algroup">
+    <label for="offsetIn">ALIGN</label>
+    <input id="offsetIn" type="number" step="0.1" value="0" title="shift the whole timeline: events and commentary move together">
+    <button id="offsetSave" class="btn sm ghost" title="align the clip to its proper start (trimmed intros etc.)">Apply</button>
+  </span>
+  <span class="spacer"></span>
+  <button id="delBtn" class="btn sm danger" title="delete this clip (admin passphrase required)">Delete</button>
+</div>
+
 <main>
   <div id="vidCol">
     <div id="vidWrap">
@@ -97,41 +265,47 @@
     </div>
     {% if clip.cv_context %}
     <div class="cv">Fusion votes:
-      {% for s in clip.cv_context.sources %}<b>{{ s.name }}</b>→{{ s.vote }}(w{{ s.weight }}){% if not loop.last %} · {% endif %}{% endfor %}
+      {% for s in clip.cv_context.sources %}<b>{{ s.name }}</b>→{{ s.vote }}(w{{ s.weight }}){% if not loop.last %}, {% endif %}{% endfor %}
       · gold=<b>{{ clip.cv_context.gold }}</b>
     </div>
     {% endif %}
     <div id="teloBar">
-      <button data-tool="arrow" class="tbtn active">➤ arrow</button>
-      <button data-tool="freehand" class="tbtn">✎ freehand</button>
-      <button data-tool="rect" class="tbtn">▭ rect</button>
-      <span style="color:var(--dim);font-size:12px">color</span>
-      <button class="sw active" data-color="#f2cc60" style="background:#f2cc60" title="gold"></button>
-      <button class="sw" data-color="#58a6ff" style="background:#58a6ff" title="blue"></button>
-      <button class="sw" data-color="#3fb950" style="background:#3fb950" title="green"></button>
-      <button class="sw" data-color="#f85149" style="background:#f85149" title="red"></button>
-      <button id="teloUndo">↩ undo</button>
-      <button id="frameExport">🖼 frame PNG</button>
+      <button data-tool="arrow" class="tbtn active">Arrow</button>
+      <button data-tool="freehand" class="tbtn">Freehand</button>
+      <button data-tool="rect" class="tbtn">Rect</button>
+      <button class="sw active" data-color="#ffd166" style="background:#ffd166" title="gold"></button>
+      <button class="sw" data-color="#3ee07f" style="background:#3ee07f" title="green"></button>
+      <button class="sw" data-color="#6cc4ff" style="background:#6cc4ff" title="blue"></button>
+      <button class="sw" data-color="#ff6b6b" style="background:#ff6b6b" title="red"></button>
+      <button id="teloUndo" class="tbtn">Undo</button>
+      <button id="frameExport" class="tbtn">Frame PNG</button>
       <span id="teloStatus"></span>
     </div>
     <div id="annotList"></div>
   </div>
-  <div class="pane" id="commentary"><h2>Live commentary</h2><div id="transcript"></div></div>
-  <div class="pane" id="cards"><h2>Tactical event cards</h2></div>
-  <div class="pane" id="coachPane" style="grid-column:1 / -1;height:44vh;display:flex;flex-direction:column">
-    <h2>🎙 AI Coach <span style="color:var(--dim);text-transform:none;font-weight:400;letter-spacing:0">— 多轮追问 · 工具调用闭环(analyze/知识库/球员/训练计划)</span></h2>
-    <div id="coachMsgs" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <input id="coachInput" placeholder="问教练:这个动作怎么改进?谁擅长?给我 3 天训练计划…"
-             style="flex:1;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--fg);padding:9px 12px;font:inherit">
-      <button id="coachSend" style="background:var(--acc);color:var(--bg);border:0;border-radius:8px;padding:0 20px;font-weight:700;cursor:pointer">发送</button>
+
+  <div class="pane" id="commentary">
+    <div class="phead"><h2>Live commentary</h2></div>
+    <div id="transcript"></div>
+  </div>
+
+  <div id="cards"><div class="phead" style="flex:0 0 auto;padding:11px 4px 8px;border-bottom:1px solid var(--line)"><h2>Tactical event cards</h2></div></div>
+
+  <div class="pane" id="coachPane">
+    <div class="phead"><h2>AI Coach</h2><span class="n">多轮追问 + 工具调用闭环 (analyze / 知识库 / 球员 / 训练计划)</span></div>
+    <div id="coachMsgs"></div>
+    <div class="chatbar">
+      <input id="coachInput" placeholder="问教练:这个动作怎么改进?谁擅长?给我 3 天训练计划…">
+      <button id="coachSend" class="btn primary">发送</button>
     </div>
   </div>
-  <div class="pane" id="reportPane" style="grid-column:1 / -1;display:none;height:auto;max-height:70vh">
-    <h2>Full-match report <span id="reportBy" style="text-transform:none"></span></h2>
-    <div id="reportBody" style="font-size:14px"></div>
+
+  <div class="pane" id="reportPane">
+    <div class="phead"><h2>Full-match report</h2><span class="n" id="reportBy"></span></div>
+    <div id="reportBody"></div>
   </div>
 </main>
+
 <script>
 const clipId = {{ clip.id | tojson }};
 const clipTitle = {{ clip.title | tojson }};
@@ -145,16 +319,18 @@ let es = null;
 function fmt(t){ return t.toFixed(1) + 's'; }
 function setDoneState(){
   statusEl.textContent = 'done';
+  statusEl.dataset.state = 'done';
   es.close(); es = null;
   for (const id of ['reportBtn','exportBtn']) {
     const btn = document.getElementById(id);
-    btn.disabled = false; btn.style.opacity = 1;
+    btn.disabled = false;
   }
 }
 function start(){
   if (es) return;
   es = new EventSource('/api/stream/' + clipId + (urlMode ? '?mode=' + urlMode : ''));
   statusEl.textContent = urlMode === 'live' ? 'LIVE streaming (model-generated)…' : 'streaming…';
+  statusEl.dataset.state = 'live';
   es.addEventListener('transcript', e => {
     const d = JSON.parse(e.data);
     const div = document.createElement('div');
@@ -176,8 +352,8 @@ function start(){
       '<span class="title"></span>' +
       '<span class="rating">★ ' + esc(d.rating) + '</span></div>' +
       '<div class="an"></div>' +
-      (Array.isArray(d.players) && d.players.length ? '<div class="players">👤 ' + esc(d.players.join(' · ')) + '</div>' : '') +
-      (d.speculative ? '<div class="spec">⚠ speculative — not grounded in CV/transcript</div>' : '');
+      (Array.isArray(d.players) && d.players.length ? '<div class="players">' + esc(d.players.join(' / ')) + '</div>' : '') +
+      (d.speculative ? '<div class="spec">⚠ unverified - not grounded in CV/transcript</div>' : '');
     div.querySelector('.title').textContent = d.title;
     div.querySelector('.an').textContent = d.analysis;
     cardsEl.appendChild(div);
@@ -188,9 +364,11 @@ function start(){
     let msg = 'stream error';
     try { msg = JSON.parse(e.data).msg || msg; } catch(_) {}
     statusEl.textContent = '⚠ ' + msg;
+    statusEl.dataset.state = 'err';
   });
   es.onerror = () => {
-    statusEl.textContent = '⚠ stream closed — press play to retry';
+    statusEl.textContent = '⚠ stream closed - press play to retry';
+    statusEl.dataset.state = 'err';
     if (es) { es.close(); es = null; }
   };
 }
@@ -230,20 +408,21 @@ const offsetIn = document.getElementById('offsetIn');
 })();
 document.getElementById('offsetSave').addEventListener('click', async () => {
   const v = parseFloat(offsetIn.value);
-  if (!isFinite(v)) { statusEl.textContent = '⚠ offset must be a number'; return; }
+  if (!isFinite(v)) { statusEl.textContent = '⚠ offset must be a number'; statusEl.dataset.state = 'err'; return; }
   try {
     const r = await fetch('/api/clips/' + clipId + '/offset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({offset: v})});
     const d = await r.json();
-    if (!r.ok || d.error) { statusEl.textContent = '⚠ ' + (d.error || ('HTTP ' + r.status)); return; }
+    if (!r.ok || d.error) { statusEl.textContent = '⚠ ' + (d.error || ('HTTP ' + r.status)); statusEl.dataset.state = 'err'; return; }
     clipOffset = d.offset;
     offsetIn.value = clipOffset;
     syncAll();
     statusEl.textContent = '✅ offset ' + clipOffset + 's saved';
-  } catch (e) { statusEl.textContent = '⚠ offset save failed: ' + e.message; }
+  } catch (e) { statusEl.textContent = '⚠ offset save failed: ' + e.message; statusEl.dataset.state = 'err'; }
 });
 document.getElementById('vid').addEventListener('play', start);
 document.getElementById('vid').addEventListener('error', () => {
-  statusEl.textContent = '⚠ video failed to load — check clip file';
+  statusEl.textContent = '⚠ video failed to load - check clip file';
+  statusEl.dataset.state = 'err';
 });
 // ---- AI Coach 对话面板(多轮 + 工具调用) ----
 const coachMsgs = document.getElementById('coachMsgs');
@@ -251,10 +430,7 @@ const coachInput = document.getElementById('coachInput');
 const coachHistory = [];
 function bubble(role, html){
   const d = document.createElement('div');
-  d.style.cssText = 'max-width:82%;padding:8px 12px;border-radius:10px;font-size:14px;line-height:1.55;white-space:pre-wrap;' +
-    (role === 'user'
-      ? 'align-self:flex-end;background:var(--acc);color:var(--bg);border-bottom-right-radius:2px'
-      : 'align-self:flex-start;background:var(--bg);border:1px solid var(--line);color:var(--fg);border-bottom-left-radius:2px');
+  d.className = 'bubble ' + (role === 'user' ? 'user' : 'assistant');
   d.innerHTML = html;
   coachMsgs.appendChild(d);
   coachMsgs.scrollTop = coachMsgs.scrollHeight;
@@ -266,7 +442,7 @@ async function coachSend(){
   if (!msg) return;
   coachInput.value = '';
   bubble('user', esc(msg));
-  const busy = bubble('assistant', '<span style="color:var(--dim)">教练思考中…</span>');
+  const busy = bubble('assistant', '<span style="color:var(--faint)">教练思考中…</span>');
   try {
     const r = await fetch('/api/agent/chat', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({clip_id: clipId, message: msg, history: coachHistory})});
@@ -274,8 +450,8 @@ async function coachSend(){
     if (!r.ok || d.error) { busy.innerHTML = '⚠ ' + esc(d.error || ('HTTP ' + r.status)); return; }
     let traceHtml = '';
     if (d.tool_trace && d.tool_trace.length) {
-      traceHtml = '<div style="margin-top:8px;font-size:12px;color:var(--gold);border-top:1px dashed var(--line);padding-top:6px">' +
-        d.tool_trace.map(t => '🔧 ' + esc(t.tool) + ' → ' + esc(t.summary)).join('<br>') + '</div>';
+      traceHtml = '<div class="trace">' +
+        d.tool_trace.map(t => '· ' + esc(t.tool) + ' → ' + esc(t.summary)).join('<br>') + '</div>';
     }
     busy.innerHTML = esc(d.reply).replace(/\n/g, '<br>') + traceHtml;
     coachHistory.push({role:'user', content: msg}, {role:'assistant', content: d.reply});
@@ -297,14 +473,14 @@ function mdToHtml(md){
 }
 document.getElementById('reportBtn').addEventListener('click', async () => {
   const pane = document.getElementById('reportPane');
-  pane.style.display = 'block';
+  pane.style.display = 'flex';
   const body = document.getElementById('reportBody');
   body.textContent = 'generating…';
   try {
     const r = await fetch('/api/report/' + clipId + (urlMode ? '?mode=' + urlMode : ''));
     const d = await r.json();
     if (!r.ok || d.error) { body.textContent = '⚠ ' + (d.error || ('report failed: HTTP ' + r.status)); return; }
-    document.getElementById('reportBy').textContent = '· by ' + d.generated_by;
+    document.getElementById('reportBy').textContent = 'by ' + d.generated_by;
     body.innerHTML = mdToHtml(d.markdown);
     pane.scrollIntoView({behavior:'smooth'});
   } catch (err) {
@@ -327,46 +503,46 @@ function wrapText(ctx, text, x, y, maxW, lineH, maxLines){
   return y + lineH;
 }
 document.getElementById('exportBtn').addEventListener('click', () => {
-  if (!cardsData.length) { statusEl.textContent = '⚠ no cards to export'; return; }
+  if (!cardsData.length) { statusEl.textContent = '⚠ no cards to export'; statusEl.dataset.state = 'err'; return; }
   const top = [...cardsData].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3);
   const W = 1200, cardH = 150, H = 300 + top.length * cardH + 90;
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
-  if (!ctx) { statusEl.textContent = '⚠ canvas 2D unsupported'; return; }
-  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = '#30363d'; ctx.strokeRect(20, 20, W - 40, H - 40);
+  if (!ctx) { statusEl.textContent = '⚠ canvas 2D unsupported'; statusEl.dataset.state = 'err'; return; }
+  ctx.fillStyle = '#0a0e14'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#222c3b'; ctx.strokeRect(20, 20, W - 40, H - 40);
   // header
-  ctx.fillStyle = '#e6edf3'; ctx.font = '700 44px sans-serif';
+  ctx.fillStyle = '#e9eff7'; ctx.font = '700 44px sans-serif';
   ctx.fillText('Lynx', 60, 90);
-  ctx.fillStyle = '#58a6ff'; ctx.fillText('Act', 60 + ctx.measureText('Lynx').width, 90);
-  ctx.fillStyle = '#e6edf3'; ctx.fillText(' Coach', 60 + ctx.measureText('LynxAct').width, 90);
-  ctx.fillStyle = '#8b949e'; ctx.font = '26px sans-serif';
-  ctx.fillText(clipTitle + ' — Top Tactical Moments', 60, 140);
-  ctx.fillStyle = '#f2cc60'; ctx.font = '22px sans-serif';
+  ctx.fillStyle = '#3ee07f'; ctx.fillText('Act', 60 + ctx.measureText('Lynx').width, 90);
+  ctx.fillStyle = '#e9eff7'; ctx.fillText(' Coach', 60 + ctx.measureText('LynxAct').width, 90);
+  ctx.fillStyle = '#93a6bc'; ctx.font = '26px sans-serif';
+  ctx.fillText(clipTitle + ' - Top Tactical Moments', 60, 140);
+  ctx.fillStyle = '#ffd166'; ctx.font = '22px sans-serif';
   ctx.fillText(urlMode === 'live' ? 'LIVE model-generated analysis' : 'tactical event analysis', 60, 178);
   // cards
   let y = 230;
   for (const c of top) {
-    ctx.fillStyle = '#161b22';
+    ctx.fillStyle = '#111722';
     ctx.fillRect(60, y, W - 120, cardH - 24);
-    ctx.fillStyle = '#58a6ff'; ctx.fillRect(60, y, 6, cardH - 24);
-    ctx.fillStyle = '#58a6ff'; ctx.font = '700 22px sans-serif';
+    ctx.fillStyle = '#3ee07f'; ctx.fillRect(60, y, 6, cardH - 24);
+    ctx.fillStyle = '#3ee07f'; ctx.font = '700 22px sans-serif';
     ctx.fillText(String(c.type || '').toUpperCase(), 90, y + 40);
-    ctx.fillStyle = '#8b949e'; ctx.font = '22px sans-serif';
+    ctx.fillStyle = '#93a6bc'; ctx.font = '22px sans-serif';
     ctx.fillText((c.t || 0).toFixed(1) + 's', 260, y + 40);
-    ctx.fillStyle = '#f2cc60'; ctx.font = '700 24px sans-serif';
+    ctx.fillStyle = '#ffd166'; ctx.font = '700 24px sans-serif';
     ctx.fillText('★ ' + (c.rating || '-'), W - 220, y + 40);
-    ctx.fillStyle = '#e6edf3'; ctx.font = '700 28px sans-serif';
+    ctx.fillStyle = '#e9eff7'; ctx.font = '700 28px sans-serif';
     ctx.fillText(String(c.title || '').slice(0, 60), 90, y + 78);
-    ctx.fillStyle = '#c9d1d9'; ctx.font = '22px sans-serif';
+    ctx.fillStyle = '#aebfd4'; ctx.font = '22px sans-serif';
     wrapText(ctx, c.analysis || '', 90, y + 112, W - 220, 26, 2);
     y += cardH;
   }
-  ctx.fillStyle = '#8b949e'; ctx.font = '20px sans-serif';
-  ctx.fillText('Generated by LynxAct Coach — live tactical analysis · commentary × CV fusion × LLM', 60, H - 45);
+  ctx.fillStyle = '#93a6bc'; ctx.font = '20px sans-serif';
+  ctx.fillText('Generated by LynxAct Coach · commentary, CV-fusion and LLM event cards', 60, H - 45);
   cv.toBlob(blob => {
-    if (!blob) { statusEl.textContent = '⚠ export failed'; return; }
+    if (!blob) { statusEl.textContent = '⚠ export failed'; statusEl.dataset.state = 'err'; return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = clipId + '-top-moments.png';
@@ -382,7 +558,7 @@ const teloCv = document.getElementById('teloCv');
 const teloBar = document.getElementById('teloBar');
 const annotList = document.getElementById('annotList');
 const teloCtx = teloCv.getContext('2d');
-const TELO = { on:false, tool:'arrow', color:'#f2cc60', anns:[], draft:null, lastUid:null, win:2.0 };
+const TELO = { on:false, tool:'arrow', color:'#ffd166', anns:[], draft:null, lastUid:null, win:2.0 };
 function vrect(){ const r = vid.getBoundingClientRect(); return {w:r.width, h:r.height}; }
 function sizeCanvas(){ const {w,h} = vrect(); teloCv.width = w; teloCv.height = h; }
 window.addEventListener('resize', () => { sizeCanvas(); paint(); });
@@ -437,11 +613,11 @@ vid.addEventListener('pause', paint);
 async function loadAnns(){
   try {
     const r = await fetch('/api/annotations/' + clipId);
-    if (!r.ok){ TELO.anns = []; renderList(); statusEl.textContent = '⚠ 标注加载失败 (HTTP ' + r.status + ')'; return; }
+    if (!r.ok){ TELO.anns = []; renderList(); statusEl.textContent = '⚠ 标注加载失败 (HTTP ' + r.status + ')'; statusEl.dataset.state = 'err'; return; }
     const d = await r.json();
     TELO.anns = Array.isArray(d.items) ? d.items : [];
     renderList();
-  } catch(_) { TELO.anns = []; statusEl.textContent = '⚠ 标注加载失败'; }
+  } catch(_) { TELO.anns = []; statusEl.textContent = '⚠ 标注加载失败'; statusEl.dataset.state = 'err'; }
 }
 function renderList(){
   annotList.innerHTML = '';
@@ -449,7 +625,7 @@ function renderList(){
     const row = document.createElement('div'); row.className = 'arow';
     const ts = document.createElement('span'); ts.className = 'ats'; ts.textContent = a.t.toFixed(1) + 's';
     ts.addEventListener('click', () => { vid.currentTime = a.t; vid.pause(); });
-    const tag = document.createElement('span'); tag.textContent = a.tool + (a.label ? ' · ' + a.label : '');
+    const tag = document.createElement('span'); tag.textContent = a.tool + (a.label ? ' / ' + a.label : '');
     const del = document.createElement('span'); del.className = 'adel'; del.textContent = '✕';
     del.addEventListener('click', async () => {
       try {
@@ -468,9 +644,8 @@ function setTeloOn(on){
   teloBar.classList.toggle('on', on);
   vid.controls = !on;   // 画板模式:画面全给画笔,空格=播放/暂停,点击=画
   const btn = document.getElementById('teloBtn');
-  btn.style.background = on ? 'var(--acc)' : 'var(--panel)';
-  btn.style.color = on ? 'var(--bg)' : 'var(--fg)';
-  document.getElementById('teloStatus').textContent = on ? '暂停视频直接画 · 空格播放/暂停 · Esc 退出画板' : '';
+  btn.classList.toggle('on', on);
+  document.getElementById('teloStatus').textContent = on ? '暂停视频直接画,空格播放/暂停,Esc 退出画板' : '';
   paint();
 }
 document.getElementById('teloBtn').addEventListener('click', () => setTeloOn(!TELO.on));
@@ -524,7 +699,7 @@ document.getElementById('teloUndo').addEventListener('click', async () => {
   } catch(_) { document.getElementById('teloStatus').textContent = '⚠ 撤销失败'; }
 });
 document.getElementById('frameExport').addEventListener('click', () => {
-  if (!TELO.on){ document.getElementById('teloStatus').textContent = '先点 ✏ Telestration 进入画板模式'; return; }
+  if (!TELO.on){ document.getElementById('teloStatus').textContent = '先点 Telestration 进入画板模式'; return; }
   const {w,h} = vrect();
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const ctx = cv.getContext('2d');
