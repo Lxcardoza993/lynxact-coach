@@ -18,6 +18,11 @@ import os
 import re
 import uuid
 
+try:
+    import fcntl
+except ImportError:          # non-POSIX (dev-only): fall back to unlocked writes  # pragma: no cover
+    fcntl = None
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ANNOT_DIR = os.path.join(BASE, "data", "annotations")
 
@@ -35,6 +40,33 @@ _UID_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 def _path(clip_id: str) -> str:
     """Path of the annotations file for clip_id — the id cannot escape ANNOT_DIR."""
     return os.path.join(ANNOT_DIR, os.path.basename(clip_id) + ".json")
+
+
+class _locked:
+    """Per-clip exclusive lock around read-modify-write cycles.
+
+    Guards add/delete/clear against interleaving (flask threaded dev server,
+    multi-worker gunicorn): without it, two concurrent adds both load the old
+    list and the last save wins, silently dropping a stroke. The lock lives on
+    a dedicated *.lock file that never gets os.replace'd, so flock stays valid
+    across writers. Non-POSIX platforms run unlocked (demo-grade fallback).
+    """
+
+    def __init__(self, clip_id: str):
+        self._path = _path(clip_id) + ".lock"
+
+    def __enter__(self):
+        os.makedirs(ANNOT_DIR, exist_ok=True)
+        self._fh = open(self._path, "a", encoding="utf-8")
+        if fcntl is not None:
+            fcntl.flock(self._fh, fcntl.LOCK_EX)
+        return self
+
+    def __exit__(self, *exc):
+        if fcntl is not None:
+            fcntl.flock(self._fh, fcntl.LOCK_UN)
+        self._fh.close()
+        return False
 
 
 def _valid_item(it) -> bool:
@@ -121,20 +153,22 @@ def add_annotation(clip_id: str, payload) -> dict:
         if not isinstance(label, str):
             raise ValueError("label must be a string")
         label = label.strip()[:MAX_LABEL]
-    items = _load(clip_id)
-    if len(items) >= MAX_ITEMS:
-        raise ValueError(f"annotation cap reached ({MAX_ITEMS} per clip)")
-    item = {
-        "uid": uuid.uuid4().hex[:12],
-        "t": float(t),
-        "tool": tool,
-        "color": color,
-        "points": [[float(x), float(y)] for x, y in points],
-    }
-    if label:
-        item["label"] = label
-    items.append(item)
-    _save(clip_id, items)
+    with _locked(clip_id):
+        items = _load(clip_id)
+        if len(items) >= MAX_ITEMS:
+            raise ValueError(f"annotation cap reached ({MAX_ITEMS} per clip)")
+        item = {
+            "uid": uuid.uuid4().hex[:12],
+            "t": float(t),
+            "tool": tool,
+            "color": color,
+            "points": [[float(x), float(y)] for x, y in points],
+        }
+        if label:
+            item["label"] = label
+        items.append(item)
+        _save(clip_id, items)
+    return item
     return item
 
 
@@ -142,17 +176,19 @@ def delete_annotation(clip_id: str, uid: str) -> bool:
     """Remove one stroke by uid. Returns True if it was removed, False otherwise."""
     if not isinstance(uid, str) or not _UID_RE.match(uid):
         return False
-    items = _load(clip_id)
-    kept = [it for it in items if it.get("uid") != uid]
-    if len(kept) == len(items):
-        return False
-    _save(clip_id, kept)
+    with _locked(clip_id):
+        items = _load(clip_id)
+        kept = [it for it in items if it.get("uid") != uid]
+        if len(kept) == len(items):
+            return False
+        _save(clip_id, kept)
     return True
 
 
 def clear_annotations(clip_id: str) -> int:
     """Remove every stroke for a clip; returns how many were removed."""
-    items = _load(clip_id)
-    if items:
-        _save(clip_id, [])
+    with _locked(clip_id):
+        items = _load(clip_id)
+        if items:
+            _save(clip_id, [])
     return len(items)

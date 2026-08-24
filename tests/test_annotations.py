@@ -150,6 +150,33 @@ def test_clip_id_cannot_escape_dir(store):
     assert item["uid"] in [x["uid"] for x in store.list_annotations("../evil")]
 
 
+def test_concurrent_adds_lose_nothing(store):
+    """flock around read-modify-write: 24 racing adds must all land."""
+    import threading
+    errors = []
+
+    def add(i):
+        try:
+            store.add_annotation("c1", good_payload(t=float(i % 100)))
+        except Exception as exc:   # pragma: no cover — collection, not control flow
+            errors.append(exc)
+
+    threads = [threading.Thread(target=add, args=(i,)) for i in range(24)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not errors
+    assert len(store.list_annotations("c1")) == 24
+
+
+def test_unlocked_fallback_when_no_fcntl(store, monkeypatch):
+    """Non-POSIX fallback: writes complete without flock."""
+    monkeypatch.setattr(anno, "fcntl", None)
+    item = store.add_annotation("c1", good_payload())
+    assert item["uid"] in [x["uid"] for x in store.list_annotations("c1")]
+
+
 # ---- endpoint tests ----
 
 def test_unknown_clip_404s():
