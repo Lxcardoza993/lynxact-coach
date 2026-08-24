@@ -37,3 +37,15 @@ Retired demos skipped: body-feint_diego-maradona_1986.mp4, elastico_ronaldinho_2
 Failures: none
 注:本地 .env 含 VAULT_ROOT 覆盖(指向旧素材镜像),dev 起 app 会列出镜像库的全部片段;
 生产无此变量,VAULT_ROOT=repo/data/vault,即本批导入的 28 个。
+
+| official-film_world-cup_1930 | 74M | 826.9s | ✓ |
+
+第 29 个候选(archive.org):1930 年世界杯官方纪录片《Official Film of the 1930 World Cup》
+(乌拉圭 vs 阿根廷决赛),CC-BY-SA 4.0,署名 Archive.org 上传者 + 同方式共享,仅演示用途。
+
+## 远程来源核实结果(2026-08-24 实测)
+- SkillCorner 10 场广播视频:✗ 官方无公开视频下载入口(skillcorner.com/opendata 404;
+  GitHub opendata 仓库仅 tracking 数据、无视频、无 release assets;视频属商业模式"Data On Demand")。
+- Metrica 3 场 sample 视频:✗ 官网 sample-data 页已下线(metrica-sports.com/sample-data 404);
+  GitHub sample-data 仓库仅 CSV 数据;更多视频在其对外教程链接中,无稳定直链。
+- Commons/archive.org:✓ 仅取 1930 官方纪录片 1 部(CC-BY-SA);现代比赛转播无合规免费源。
