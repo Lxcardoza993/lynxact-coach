@@ -1,0 +1,2009 @@
+{
+ "title": "Metrica Sample Game 2 (tracking ground truth)",
+ "duration": 600,
+ "transcript": [
+  {
+   "t": 36.5,
+   "text": "Sprint: Home #10 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 51.2,
+   "text": "Sprint: Home #5 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 55.7,
+   "text": "Sprint: Away #22 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 106.9,
+   "text": "Sprint: Away #22 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 244.6,
+   "text": "Sprint: Away #22 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 245.4,
+   "text": "Sprint: Home #3 冲刺 峰值速度 7.4 m/s"
+  },
+  {
+   "t": 468.1,
+   "text": "Sprint: Away #18 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 469.3,
+   "text": "Sprint: Away #18 冲刺 峰值速度 7.6 m/s"
+  },
+  {
+   "t": 568.7,
+   "text": "Sprint: Home #6 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 647.7,
+   "text": "Sprint: Away #23 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 652.6,
+   "text": "Sprint: Home #10 冲刺 峰值速度 7.9 m/s"
+  },
+  {
+   "t": 654.0,
+   "text": "Sprint: Away #15 冲刺 峰值速度 7.4 m/s"
+  },
+  {
+   "t": 654.3,
+   "text": "Sprint: Home #9 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 654.5,
+   "text": "Sprint: Away #17 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 655.1,
+   "text": "Sprint: Away #20 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 655.2,
+   "text": "Sprint: Home #5 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 655.8,
+   "text": "Sprint: Away #18 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 680.8,
+   "text": "Sprint: Home #1 冲刺 峰值速度 7.4 m/s"
+  },
+  {
+   "t": 681.4,
+   "text": "Sprint: Home #3 冲刺 峰值速度 7.9 m/s"
+  },
+  {
+   "t": 839.6,
+   "text": "Sprint: Home #10 冲刺 峰值速度 7.7 m/s"
+  },
+  {
+   "t": 840.0,
+   "text": "Sprint: Away #16 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 905.4,
+   "text": "Sprint: Away #23 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 941.1,
+   "text": "Sprint: Home #8 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 1053.2,
+   "text": "Sprint: Away #22 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 1184.6,
+   "text": "Sprint: Home #5 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 1318.9,
+   "text": "Sprint: Home #6 冲刺 峰值速度 7.6 m/s"
+  },
+  {
+   "t": 1319.7,
+   "text": "Sprint: Away #19 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 1352.9,
+   "text": "Sprint: Away #24 冲刺 峰值速度 7.7 m/s"
+  },
+  {
+   "t": 1354.1,
+   "text": "Sprint: Home #2 冲刺 峰值速度 7.8 m/s"
+  },
+  {
+   "t": 1392.7,
+   "text": "Sprint: Home #10 冲刺 峰值速度 7.7 m/s"
+  },
+  {
+   "t": 1392.9,
+   "text": "Sprint: Away #16 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 1495.7,
+   "text": "Sprint: Home #10 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 1500.7,
+   "text": "Sprint: Home #3 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 1501.3,
+   "text": "Sprint: Away #23 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 1540.6,
+   "text": "Sprint: Home #6 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 1736.7,
+   "text": "Sprint: Away #22 冲刺 峰值速度 7.6 m/s"
+  },
+  {
+   "t": 1737.6,
+   "text": "Sprint: Home #1 冲刺 峰值速度 7.8 m/s"
+  },
+  {
+   "t": 1858.9,
+   "text": "Sprint: Away #18 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 1871.6,
+   "text": "Sprint: Away #22 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 1872.2,
+   "text": "Sprint: Home #6 冲刺 峰值速度 7.1 m/s"
+  },
+  {
+   "t": 1872.6,
+   "text": "Sprint: Home #1 冲刺 峰值速度 7.1 m/s"
+  },
+  {
+   "t": 1873.0,
+   "text": "Sprint: Home #7 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 1873.5,
+   "text": "Sprint: Home #8 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 1983.1,
+   "text": "Sprint: Away #18 冲刺 峰值速度 7.6 m/s"
+  },
+  {
+   "t": 2068.6,
+   "text": "Sprint: Home #10 冲刺 峰值速度 7.4 m/s"
+  },
+  {
+   "t": 2072.0,
+   "text": "Sprint: Away #18 冲刺 峰值速度 7.8 m/s"
+  },
+  {
+   "t": 2075.6,
+   "text": "Sprint: Home #6 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 2075.6,
+   "text": "Sprint: Away #23 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 2075.7,
+   "text": "Sprint: Away #22 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 2075.8,
+   "text": "Sprint: Home #2 冲刺 峰值速度 7.6 m/s"
+  },
+  {
+   "t": 2076.6,
+   "text": "Sprint: Away #24 冲刺 峰值速度 7.6 m/s"
+  },
+  {
+   "t": 2077.5,
+   "text": "Sprint: Home #4 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 2121.3,
+   "text": "Sprint: Home #1 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 2199.4,
+   "text": "Sprint: Home #8 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 2200.2,
+   "text": "Sprint: Away #19 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 2200.3,
+   "text": "Sprint: Home #7 冲刺 峰值速度 7.5 m/s"
+  },
+  {
+   "t": 2201.1,
+   "text": "Sprint: Away #23 冲刺 峰值速度 7.3 m/s"
+  },
+  {
+   "t": 2201.2,
+   "text": "Sprint: Home #5 冲刺 峰值速度 7.1 m/s"
+  },
+  {
+   "t": 2201.6,
+   "text": "Sprint: Away #22 冲刺 峰值速度 7.2 m/s"
+  },
+  {
+   "t": 2291.4,
+   "text": "Sprint: Away #23 冲刺 峰值速度 7.1 m/s"
+  }
+ ],
+ "events": [
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 36.5,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #5 冲刺",
+   "t": 51.2,
+   "rating": 7,
+   "players": [
+    "Home#5"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 55.7,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 106.9,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 244.6,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 245.4,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 468.1,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 469.3,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #6 冲刺",
+   "t": 568.7,
+   "rating": 7,
+   "players": [
+    "Home#6"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 647.7,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 652.6,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.9 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #15 冲刺",
+   "t": 654.0,
+   "rating": 7,
+   "players": [
+    "Away#15"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #9 冲刺",
+   "t": 654.3,
+   "rating": 7,
+   "players": [
+    "Home#9"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #17 冲刺",
+   "t": 654.5,
+   "rating": 7,
+   "players": [
+    "Away#17"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #20 冲刺",
+   "t": 655.1,
+   "rating": 7,
+   "players": [
+    "Away#20"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #5 冲刺",
+   "t": 655.2,
+   "rating": 7,
+   "players": [
+    "Home#5"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 655.8,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #1 冲刺",
+   "t": 680.8,
+   "rating": 7,
+   "players": [
+    "Home#1"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 681.4,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.9 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 839.6,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #16 冲刺",
+   "t": 840.0,
+   "rating": 7,
+   "players": [
+    "Away#16"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 905.4,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #8 冲刺",
+   "t": 941.1,
+   "rating": 7,
+   "players": [
+    "Home#8"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 1053.2,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #5 冲刺",
+   "t": 1184.6,
+   "rating": 7,
+   "players": [
+    "Home#5"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #6 冲刺",
+   "t": 1318.9,
+   "rating": 7,
+   "players": [
+    "Home#6"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #19 冲刺",
+   "t": 1319.7,
+   "rating": 7,
+   "players": [
+    "Away#19"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #24 冲刺",
+   "t": 1352.9,
+   "rating": 7,
+   "players": [
+    "Away#24"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #2 冲刺",
+   "t": 1354.1,
+   "rating": 7,
+   "players": [
+    "Home#2"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.8 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 1392.7,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #16 冲刺",
+   "t": 1392.9,
+   "rating": 7,
+   "players": [
+    "Away#16"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 1495.7,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 1500.7,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 1501.3,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #6 冲刺",
+   "t": 1540.6,
+   "rating": 7,
+   "players": [
+    "Home#6"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 1736.7,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #1 冲刺",
+   "t": 1737.6,
+   "rating": 7,
+   "players": [
+    "Home#1"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.8 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 1858.9,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 1871.6,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #6 冲刺",
+   "t": 1872.2,
+   "rating": 7,
+   "players": [
+    "Home#6"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #1 冲刺",
+   "t": 1872.6,
+   "rating": 7,
+   "players": [
+    "Home#1"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #7 冲刺",
+   "t": 1873.0,
+   "rating": 7,
+   "players": [
+    "Home#7"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #8 冲刺",
+   "t": 1873.5,
+   "rating": 7,
+   "players": [
+    "Home#8"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 1983.1,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 2068.6,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 2072.0,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.8 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #6 冲刺",
+   "t": 2075.6,
+   "rating": 7,
+   "players": [
+    "Home#6"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 2075.6,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 2075.7,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #2 冲刺",
+   "t": 2075.8,
+   "rating": 7,
+   "players": [
+    "Home#2"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #24 冲刺",
+   "t": 2076.6,
+   "rating": 7,
+   "players": [
+    "Away#24"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #4 冲刺",
+   "t": 2077.5,
+   "rating": 7,
+   "players": [
+    "Home#4"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #1 冲刺",
+   "t": 2121.3,
+   "rating": 7,
+   "players": [
+    "Home#1"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #8 冲刺",
+   "t": 2199.4,
+   "rating": 7,
+   "players": [
+    "Home#8"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #19 冲刺",
+   "t": 2200.2,
+   "rating": 7,
+   "players": [
+    "Away#19"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #7 冲刺",
+   "t": 2200.3,
+   "rating": 7,
+   "players": [
+    "Home#7"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 2201.1,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #5 冲刺",
+   "t": 2201.2,
+   "rating": 7,
+   "players": [
+    "Home#5"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 2201.6,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 2291.4,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 2292.0,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 2293.0,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 2293.4,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #24 冲刺",
+   "t": 2336.0,
+   "rating": 7,
+   "players": [
+    "Away#24"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 2336.4,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #8 冲刺",
+   "t": 2339.3,
+   "rating": 7,
+   "players": [
+    "Home#8"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #1 冲刺",
+   "t": 2396.8,
+   "rating": 7,
+   "players": [
+    "Home#1"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.9 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 2397.5,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 11.8 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 2450.3,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #17 冲刺",
+   "t": 2451.0,
+   "rating": 7,
+   "players": [
+    "Away#17"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 2471.2,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #24 冲刺",
+   "t": 2477.8,
+   "rating": 7,
+   "players": [
+    "Away#24"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #6 冲刺",
+   "t": 2528.4,
+   "rating": 7,
+   "players": [
+    "Home#6"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #7 冲刺",
+   "t": 2529.1,
+   "rating": 7,
+   "players": [
+    "Home#7"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 2588.3,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #9 冲刺",
+   "t": 2659.5,
+   "rating": 7,
+   "players": [
+    "Home#9"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #21 冲刺",
+   "t": 2660.2,
+   "rating": 7,
+   "players": [
+    "Away#21"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 2846.5,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 8.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 2875.3,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #7 冲刺",
+   "t": 2877.4,
+   "rating": 7,
+   "players": [
+    "Home#7"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #19 冲刺",
+   "t": 2912.1,
+   "rating": 7,
+   "players": [
+    "Away#19"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 2946.9,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #24 冲刺",
+   "t": 3030.2,
+   "rating": 7,
+   "players": [
+    "Away#24"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 3030.7,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 8.0 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 3061.7,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #5 冲刺",
+   "t": 3061.8,
+   "rating": 7,
+   "players": [
+    "Home#5"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 3062.4,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #22 冲刺",
+   "t": 3246.4,
+   "rating": 7,
+   "players": [
+    "Away#22"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.8 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #16 冲刺",
+   "t": 3247.7,
+   "rating": 7,
+   "players": [
+    "Away#16"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 3247.8,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 3345.4,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #9 冲刺",
+   "t": 3345.8,
+   "rating": 7,
+   "players": [
+    "Home#9"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #8 冲刺",
+   "t": 3346.0,
+   "rating": 7,
+   "players": [
+    "Home#8"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #7 冲刺",
+   "t": 3349.6,
+   "rating": 7,
+   "players": [
+    "Home#7"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 3576.0,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #19 冲刺",
+   "t": 3598.6,
+   "rating": 7,
+   "players": [
+    "Away#19"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #6 冲刺",
+   "t": 3598.9,
+   "rating": 7,
+   "players": [
+    "Home#6"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #26 冲刺",
+   "t": 3599.1,
+   "rating": 7,
+   "players": [
+    "Away#26"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #24 冲刺",
+   "t": 3599.3,
+   "rating": 7,
+   "players": [
+    "Away#24"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #7 冲刺",
+   "t": 3600.2,
+   "rating": 7,
+   "players": [
+    "Home#7"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 3601.0,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 3601.3,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #6 冲刺",
+   "t": 3601.4,
+   "rating": 7,
+   "players": [
+    "Home#6"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #5 冲刺",
+   "t": 3602.8,
+   "rating": 7,
+   "players": [
+    "Home#5"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #8 冲刺",
+   "t": 3644.0,
+   "rating": 7,
+   "players": [
+    "Home#8"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #24 冲刺",
+   "t": 3644.4,
+   "rating": 7,
+   "players": [
+    "Away#24"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #21 冲刺",
+   "t": 3645.4,
+   "rating": 7,
+   "players": [
+    "Away#21"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #15 冲刺",
+   "t": 3659.1,
+   "rating": 7,
+   "players": [
+    "Away#15"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #12 冲刺",
+   "t": 3861.2,
+   "rating": 7,
+   "players": [
+    "Home#12"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #19 冲刺",
+   "t": 3909.0,
+   "rating": 7,
+   "players": [
+    "Away#19"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #2 冲刺",
+   "t": 4001.2,
+   "rating": 7,
+   "players": [
+    "Home#2"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 4001.3,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #9 冲刺",
+   "t": 4149.1,
+   "rating": 7,
+   "players": [
+    "Home#9"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #12 冲刺",
+   "t": 4149.3,
+   "rating": 7,
+   "players": [
+    "Home#12"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 4151.3,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #26 冲刺",
+   "t": 4159.7,
+   "rating": 7,
+   "players": [
+    "Away#26"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 4160.6,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 8.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #15 冲刺",
+   "t": 4161.6,
+   "rating": 7,
+   "players": [
+    "Away#15"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 4161.8,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 8.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 4322.2,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 4338.4,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 4379.4,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #9 冲刺",
+   "t": 4379.5,
+   "rating": 7,
+   "players": [
+    "Home#9"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #13 冲刺",
+   "t": 4379.5,
+   "rating": 7,
+   "players": [
+    "Home#13"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #21 冲刺",
+   "t": 4380.1,
+   "rating": 7,
+   "players": [
+    "Away#21"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #26 冲刺",
+   "t": 4380.2,
+   "rating": 7,
+   "players": [
+    "Away#26"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #5 冲刺",
+   "t": 4381.0,
+   "rating": 7,
+   "players": [
+    "Home#5"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #7 冲刺",
+   "t": 4381.0,
+   "rating": 7,
+   "players": [
+    "Home#7"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #17 冲刺",
+   "t": 4381.2,
+   "rating": 7,
+   "players": [
+    "Away#17"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 4381.6,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 4382.1,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #24 冲刺",
+   "t": 4442.1,
+   "rating": 7,
+   "players": [
+    "Away#24"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #26 冲刺",
+   "t": 4443.2,
+   "rating": 7,
+   "players": [
+    "Away#26"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 8.0 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #7 冲刺",
+   "t": 4443.3,
+   "rating": 7,
+   "players": [
+    "Home#7"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #5 冲刺",
+   "t": 4443.9,
+   "rating": 7,
+   "players": [
+    "Home#5"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #1 冲刺",
+   "t": 4446.8,
+   "rating": 7,
+   "players": [
+    "Home#1"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #24 冲刺",
+   "t": 4447.1,
+   "rating": 7,
+   "players": [
+    "Away#24"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #5 冲刺",
+   "t": 4447.6,
+   "rating": 7,
+   "players": [
+    "Home#5"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #2 冲刺",
+   "t": 4447.8,
+   "rating": 7,
+   "players": [
+    "Home#2"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #6 冲刺",
+   "t": 4924.7,
+   "rating": 7,
+   "players": [
+    "Home#6"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.8 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #26 冲刺",
+   "t": 4925.0,
+   "rating": 7,
+   "players": [
+    "Away#26"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #10 冲刺",
+   "t": 4967.6,
+   "rating": 7,
+   "players": [
+    "Home#10"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #13 冲刺",
+   "t": 4968.3,
+   "rating": 7,
+   "players": [
+    "Home#13"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #16 冲刺",
+   "t": 4968.3,
+   "rating": 7,
+   "players": [
+    "Away#16"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.4 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #9 冲刺",
+   "t": 4969.4,
+   "rating": 7,
+   "players": [
+    "Home#9"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #18 冲刺",
+   "t": 4969.8,
+   "rating": 7,
+   "players": [
+    "Away#18"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #19 冲刺",
+   "t": 4971.5,
+   "rating": 7,
+   "players": [
+    "Away#19"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #26 冲刺",
+   "t": 5086.8,
+   "rating": 7,
+   "players": [
+    "Away#26"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #9 冲刺",
+   "t": 5093.6,
+   "rating": 7,
+   "players": [
+    "Home#9"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #17 冲刺",
+   "t": 5094.2,
+   "rating": 7,
+   "players": [
+    "Away#17"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.6 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #14 冲刺",
+   "t": 5439.4,
+   "rating": 7,
+   "players": [
+    "Home#14"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 8.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #19 冲刺",
+   "t": 5439.8,
+   "rating": 7,
+   "players": [
+    "Away#19"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.7 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #14 冲刺",
+   "t": 5440.2,
+   "rating": 7,
+   "players": [
+    "Home#14"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 10.9 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #23 冲刺",
+   "t": 5600.3,
+   "rating": 7,
+   "players": [
+    "Away#23"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.2 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #26 冲刺",
+   "t": 5600.4,
+   "rating": 7,
+   "players": [
+    "Away#26"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.1 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #7 冲刺",
+   "t": 5601.9,
+   "rating": 7,
+   "players": [
+    "Home#7"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Home #3 冲刺",
+   "t": 5602.1,
+   "rating": 7,
+   "players": [
+    "Home#3"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.5 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #19 冲刺",
+   "t": 5602.4,
+   "rating": 7,
+   "players": [
+    "Away#19"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 7.3 m/s"
+  },
+  {
+   "type": "burst",
+   "title": "Away #20 冲刺",
+   "t": 5631.8,
+   "rating": 7,
+   "players": [
+    "Away#20"
+   ],
+   "speculative": false,
+   "analysis": "峰值速度 8.1 m/s"
+  }
+ ],
+ "cv_context": {
+  "fusion_label": "metrica-tracking",
+  "confidence": 1.0,
+  "sources": [
+   {
+    "name": "Metrica tracking",
+    "vote": "ground truth, 25 Hz",
+    "weight": 1
+   }
+  ],
+  "gold": "optical tracking system"
+ }
+}

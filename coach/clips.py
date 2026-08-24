@@ -11,9 +11,12 @@ import uuid
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BAKED_DIR = os.path.join(BASE, "data", "baked")
+POSTER_DIR = os.path.join(BASE, "data", "posters")
+ANNOT_DIR = os.path.join(BASE, "data", "annotations")
 TMP_DIR = os.path.join(BASE, "data", "tmp")
 UPLOAD_DIR = os.path.join(TMP_DIR, "uploads")
 AUDIO_DIR = os.path.join(TMP_DIR, "audio")
+CARDS_DIR = os.path.join(TMP_DIR, "cards")
 UPLOADS_REG = os.path.join(TMP_DIR, "uploads.json")
 VAULT_ROOT = os.environ.get(
     "VAULT_ROOT",
@@ -89,6 +92,14 @@ def register_upload(src_path: str, orig_name: str, duration: float) -> str:
     return clip_id
 
 
+def poster_url(clip_id: str) -> str | None:
+    """Preview-poster URL for a clip ('/posters/<id>.jpg'), or None when no
+    poster has been generated (index card then falls back to a placeholder)."""
+    clip_id = os.path.basename(clip_id)
+    path = os.path.join(POSTER_DIR, clip_id + ".jpg")
+    return f"/posters/{clip_id}.jpg" if os.path.exists(path) else None
+
+
 def get_upload(clip_id: str) -> dict | None:
     """Return the uploaded-clip dict, or None if unregistered or its mp4 is missing."""
     entry = _reg().get(clip_id)
@@ -104,6 +115,7 @@ def get_upload(clip_id: str) -> dict | None:
         "title": entry.get("title", clip_id),
         "duration": entry.get("duration"),
         "audio_wav": audio if os.path.exists(audio) else None,
+        "poster": poster_url(clip_id),
         "source": "upload",
     }
 
@@ -130,6 +142,7 @@ def get_clip(clip_id: str) -> dict | None:
         "baked": baked is not None,
         "duration": (baked or {}).get("duration"),
         "cv_context": (baked or {}).get("cv_context"),
+        "poster": poster_url(clip_id),
         "source": "vault",
     }
 
@@ -137,6 +150,48 @@ def get_clip(clip_id: str) -> dict | None:
 def video_dir(clip_id: str) -> str:
     """Return the directory holding clip_id's mp4 (UPLOAD_DIR for uploads, else VAULT_ROOT)."""
     return UPLOAD_DIR if get_upload(clip_id) else VAULT_ROOT
+
+
+def _derived_paths(clip_id: str) -> list[str]:
+    """Every derived artifact a clip can leave behind (baked analysis, poster,
+    event-card cache, extracted audio, telestration annotations + lock +
+    alignment offset). All best-effort — their absence is never an error."""
+    return [
+        os.path.join(BAKED_DIR, clip_id + ".json"),
+        os.path.join(POSTER_DIR, clip_id + ".jpg"),
+        os.path.join(CARDS_DIR, clip_id + ".jsonl"),
+        os.path.join(AUDIO_DIR, clip_id + ".wav"),
+        os.path.join(ANNOT_DIR, clip_id + ".json"),
+        os.path.join(ANNOT_DIR, clip_id + ".json.lock"),
+        os.path.join(ANNOT_DIR, clip_id + ".offset.json"),
+    ]
+
+
+def delete_clip(clip_id: str) -> bool:
+    """Delete a clip and every file derived from it, and (for uploads) drop
+    its registry entry. Returns True iff an mp4 existed and is gone now.
+
+    clip_id is basenamed exactly like get_clip, so ids such as '../evil'
+    cannot escape the data dirs. Side files are removed best-effort — the
+    mp4 removal alone decides success, matching the store discipline that a
+    missing artifact degrades instead of raising.
+    """
+    clip_id = os.path.basename(clip_id)
+    if not clip_id:
+        return False
+    mp4 = os.path.join(video_dir(clip_id), clip_id + ".mp4")
+    if not os.path.exists(mp4):
+        return False
+    for path in [mp4] + _derived_paths(clip_id):
+        try:
+            os.remove(path)
+        except OSError:
+            pass                 # side file already gone / locked — continue cleanup
+    if _reg().get(clip_id):      # upload source: unregister it
+        reg = _reg()
+        del reg[clip_id]
+        _save_reg(reg)
+    return not os.path.exists(mp4)
 
 
 def list_clips() -> list[dict]:

@@ -14,3 +14,5 @@ data/annotations/
 .coverage.*
 htmlcov/
 
+
+data/posters/

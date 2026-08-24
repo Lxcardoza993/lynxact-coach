@@ -86,6 +86,8 @@
   <button id="reportBtn" disabled style="background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">📋 Full report</button>
   <button id="exportBtn" disabled style="background:var(--panel);color:var(--gold);border:1px solid var(--gold);border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">🖼 Export PNG</button>
   <button id="teloBtn" style="background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer">✏ Telestration</button>
+  <a class="tag" href="/" style="text-decoration:none;cursor:pointer">← all clips</a>
+  <button id="delBtn" title="删除这个剪辑(需要管理员口令)" style="background:var(--panel);color:#f85149;border:1px solid #f85149;border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer">🗑 delete</button>
 </header>
 <main>
   <div id="vidCol">
@@ -537,6 +539,26 @@ document.getElementById('frameExport').addEventListener('click', () => {
   }, 'image/png');
 });
 loadAnns();
+
+// delete this clip (ADMIN_TOKEN-protected, token kept in sessionStorage)
+function deleteClipBtn(btn, id, title, redirectTo){
+  btn.addEventListener('click', async () => {
+    const KEY = 'lynxact_admin_token';
+    if (!confirm('删除「' + title + '」?此操作不可撤销。')) return;
+    let token = sessionStorage.getItem(KEY);
+    if (!token){ token = prompt('管理员口令(第一次删除时输入):'); if (!token) return; }
+    try {
+      const r = await fetch('/api/clips/' + encodeURIComponent(id),
+        {method:'DELETE', headers:{'X-Admin-Token': token}});
+      if (r.status === 403){ sessionStorage.removeItem(KEY); alert('口令错误,或删除功能未开启'); return; }
+      const d = await r.json();
+      if (!r.ok){ alert('删除失败: ' + (d.error || r.status)); return; }
+      sessionStorage.setItem(KEY, token);
+      location.href = redirectTo;
+    } catch(err){ alert('删除失败: ' + err.message); }
+  });
+}
+deleteClipBtn(document.getElementById('delBtn'), clipId, clipTitle, '/');
 </script>
 </body>
 </html>

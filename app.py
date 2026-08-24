@@ -1,4 +1,5 @@
 """LynxAct Coach — Flask entry. http://127.0.0.1:6901"""
+import hmac
 import logging
 import os
 
@@ -10,13 +11,31 @@ load_dotenv()
 import subprocess  # nosec
 import uuid
 
-from flask import Flask, Response, abort, jsonify, redirect, render_template, request
+from flask import (
+    Flask,
+    Response,
+    abort,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+)
 
 from coach import agent
 from coach import annotations as anno_mod
 from coach import report as report_mod
 from coach.claude import _cfg
-from coach.clips import AUDIO_DIR, TMP_DIR, get_clip, list_clips, register_upload, video_dir
+from coach.clips import (
+    AUDIO_DIR,
+    POSTER_DIR,
+    TMP_DIR,
+    delete_clip,
+    get_clip,
+    list_clips,
+    register_upload,
+    video_dir,
+)
 from coach.stream import sse_stream
 from coach.video import range_stream
 
@@ -64,6 +83,30 @@ def coach_view(clip_id: str) -> str:
 def video(fname: str) -> Response:
     clip_id = fname.rsplit(".", 1)[0]
     return range_stream(fname, video_dir(clip_id))
+
+
+@app.route("/posters/<name>")
+def poster(name: str) -> Response:
+    """Generated preview posters (data/posters, gitignored)."""
+    return send_from_directory(
+        POSTER_DIR, os.path.basename(name), mimetype="image/jpeg"
+    )
+
+
+@app.route("/api/clips/<clip_id>", methods=["DELETE"])
+def api_clip_delete(clip_id: str) -> Response:
+    """Delete a clip and all its derived files. Guarded by ADMIN_TOKEN — the
+    site is public, so without a matching X-Admin-Token header any visitor
+    (or stray crawler) could wipe the library."""
+    if not get_clip(clip_id):
+        abort(404)
+    expected = os.environ.get("ADMIN_TOKEN") or ""
+    given = request.headers.get("X-Admin-Token", "")
+    if not expected or not hmac.compare_digest(expected, given):
+        return jsonify(error="delete disabled or bad admin token"), 403
+    if not delete_clip(clip_id):
+        return jsonify(error="deletion failed"), 500
+    return jsonify(deleted=clip_id)
 
 
 @app.route("/api/report/<clip_id>")
