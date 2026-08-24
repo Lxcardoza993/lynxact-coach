@@ -210,6 +210,8 @@ def get_offset(clip_id: str) -> float:
     try:
         with open(path, encoding="utf-8") as fh:
             raw = json.load(fh)
+        if not isinstance(raw, dict):
+            return 0.0
         x = float(raw.get("offset", 0.0))
         if not math.isfinite(x) or abs(x) > OFFSET_MAX_ABS:
             return 0.0

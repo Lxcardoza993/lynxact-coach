@@ -66,6 +66,14 @@ def too_large(_: Exception) -> tuple[str, int]:
     return _err_page(413, "file too large — 300MB max")
 
 
+@app.errorhandler(OSError)
+def storage_error(exc: OSError) -> tuple[Response, int]:
+    """Disk-level failures (full disk, permissions) → JSON 500 so frontends
+    get a parseable error instead of a generic HTML page."""
+    logger.warning("storage OSError: %s", exc)
+    return jsonify(error="storage failed"), 500
+
+
 @app.route("/")
 def index() -> str:
     return render_template("index.html", clips=list_clips(), err=request.args.get("err"))

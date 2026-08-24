@@ -437,11 +437,11 @@ vid.addEventListener('pause', paint);
 async function loadAnns(){
   try {
     const r = await fetch('/api/annotations/' + clipId);
-    if (!r.ok){ TELO.anns = []; renderList(); return; }
+    if (!r.ok){ TELO.anns = []; renderList(); statusEl.textContent = '⚠ 标注加载失败 (HTTP ' + r.status + ')'; return; }
     const d = await r.json();
     TELO.anns = Array.isArray(d.items) ? d.items : [];
     renderList();
-  } catch(_) { TELO.anns = []; }
+  } catch(_) { TELO.anns = []; statusEl.textContent = '⚠ 标注加载失败'; }
 }
 function renderList(){
   annotList.innerHTML = '';
@@ -455,7 +455,8 @@ function renderList(){
       try {
         const r = await fetch('/api/annotations/' + clipId + '/' + a.uid, {method:'DELETE'});
         if (r.ok){ TELO.anns = TELO.anns.filter(x => x.uid !== a.uid); renderList(); paint(); }
-      } catch(_) {}
+        else { document.getElementById('teloStatus').textContent = '⚠ 删除失败 (HTTP ' + r.status + ')'; }
+      } catch(_) { document.getElementById('teloStatus').textContent = '⚠ 删除失败'; }
     });
     row.appendChild(ts); row.appendChild(tag); row.appendChild(del);
     annotList.appendChild(row);
@@ -519,7 +520,8 @@ document.getElementById('teloUndo').addEventListener('click', async () => {
   try {
     const r = await fetch('/api/annotations/' + clipId + '/' + TELO.lastUid, {method:'DELETE'});
     if (r.ok){ TELO.anns = TELO.anns.filter(x => x.uid !== TELO.lastUid); TELO.lastUid = null; renderList(); paint(); }
-  } catch(_) {}
+    else { document.getElementById('teloStatus').textContent = '⚠ 撤销失败 (HTTP ' + r.status + ')'; }
+  } catch(_) { document.getElementById('teloStatus').textContent = '⚠ 撤销失败'; }
 });
 document.getElementById('frameExport').addEventListener('click', () => {
   if (!TELO.on){ document.getElementById('teloStatus').textContent = '先点 ✏ Telestration 进入画板模式'; return; }

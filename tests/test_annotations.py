@@ -7,6 +7,7 @@ full CRUD roundtrip. Hermetic — tmp_path-backed stores, a dummy vault mp4,
 no external services.
 """
 import json
+import os
 
 import pytest
 
@@ -268,3 +269,22 @@ def test_offset_endpoints_bad_payload_400(clip):
     client = app.test_client()
     r = client.post(f"/api/clips/{clip}/offset", json={"offset": "NaN"})
     assert r.status_code == 400 and "offset" in r.get_json()["error"]
+
+
+def test_offset_file_nonfinite_value_degrades_to_zero(store):
+    store.set_offset("c1", 3.0)
+    with open(anno._offset_path("c1"), "w", encoding="utf-8") as fh:
+        json.dump({"offset": float("nan")}, fh)  # python json round-trips NaN
+    assert store.get_offset("c1") == 0.0
+
+
+def test_offset_file_non_dict_degrades_to_zero(store):
+    store.set_offset("c1", 3.0)
+    with open(anno._offset_path("c1"), "w", encoding="utf-8") as fh:
+        json.dump([1, 2, 3], fh)
+    assert store.get_offset("c1") == 0.0
+
+
+def test_set_offset_leaves_no_tmp_residue(store):
+    store.set_offset("c1", 5.0)
+    assert not os.path.exists(anno._offset_path("c1") + ".tmp")
