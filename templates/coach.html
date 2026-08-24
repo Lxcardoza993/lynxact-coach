@@ -38,6 +38,23 @@
   .cv { font-size:12px; color:var(--dim); margin-top:4px; }
   .cv b { color:var(--fg); }
   #status { margin-left:auto; font-size:12px; color:var(--dim); }
+  /* ---- Telestration 画板 ---- */
+  #vidWrap { position:relative; }
+  #teloCv { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; }
+  #vidWrap.telo #teloCv { pointer-events:auto; cursor:crosshair; }
+  #teloBar { display:none; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px; }
+  #teloBar.on { display:flex; }
+  #teloBar button { background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:3px 12px; font:inherit; font-size:12px; cursor:pointer; }
+  #teloBar button.active { background:var(--acc); color:var(--bg); border-color:var(--acc); }
+  #teloBar .sw { width:18px; height:18px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; }
+  #teloBar .sw.active { border-color:var(--fg); }
+  #teloStatus { color:var(--dim); font-size:12px; margin-left:auto; }
+  #annotList { margin-top:8px; display:flex; flex-direction:column; gap:4px; }
+  #annotList:empty { display:none; }
+  .arow { display:flex; gap:10px; align-items:center; font-size:12px; color:var(--dim); border:1px solid var(--line); border-radius:6px; padding:4px 10px; background:var(--panel); }
+  .arow .ats { color:var(--acc); font-variant-numeric:tabular-nums; cursor:pointer; font-weight:700; }
+  .arow .adel { margin-left:auto; color:var(--dim); cursor:pointer; font-weight:700; }
+  .arow .adel:hover { color:#f85149; }
 </style>
 </head>
 <body>
@@ -51,16 +68,34 @@
   <a class="tag" href="?mode=live" style="text-decoration:none;cursor:pointer">▶ TRY LIVE (model-generated)</a>
   <button id="reportBtn" disabled style="background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">📋 Full report</button>
   <button id="exportBtn" disabled style="background:var(--panel);color:var(--gold);border:1px solid var(--gold);border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer;opacity:.4">🖼 Export PNG</button>
+  <button id="teloBtn" style="background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 14px;font-weight:700;cursor:pointer">✏ Telestration</button>
 </header>
 <main>
   <div>
-    <video id="vid" controls preload="metadata" src="/video/{{ clip.file }}"></video>
+    <div id="vidWrap">
+      <video id="vid" controls preload="metadata" src="/video/{{ clip.file }}"></video>
+      <canvas id="teloCv"></canvas>
+    </div>
     {% if clip.cv_context %}
     <div class="cv">Fusion votes:
       {% for s in clip.cv_context.sources %}<b>{{ s.name }}</b>→{{ s.vote }}(w{{ s.weight }}){% if not loop.last %} · {% endif %}{% endfor %}
       · gold=<b>{{ clip.cv_context.gold }}</b>
     </div>
     {% endif %}
+    <div id="teloBar">
+      <button data-tool="arrow" class="tbtn active">➤ arrow</button>
+      <button data-tool="freehand" class="tbtn">✎ freehand</button>
+      <button data-tool="rect" class="tbtn">▭ rect</button>
+      <span style="color:var(--dim);font-size:12px">color</span>
+      <button class="sw active" data-color="#f2cc60" style="background:#f2cc60" title="gold"></button>
+      <button class="sw" data-color="#58a6ff" style="background:#58a6ff" title="blue"></button>
+      <button class="sw" data-color="#3fb950" style="background:#3fb950" title="green"></button>
+      <button class="sw" data-color="#f85149" style="background:#f85149" title="red"></button>
+      <button id="teloUndo">↩ undo</button>
+      <button id="frameExport">🖼 frame PNG</button>
+      <span id="teloStatus"></span>
+    </div>
+    <div id="annotList"></div>
   </div>
   <div class="pane"><h2>Live commentary</h2><div id="transcript"></div></div>
   <div class="pane" id="cards"><h2>Tactical event cards</h2></div>
@@ -271,6 +306,167 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     statusEl.textContent = 'PNG exported';
   }, 'image/png');
 });
+// ---- Telestration 战术画板(暂停视频→画箭头/自由线/矩形→笔画锚定当前时间) ----
+const vid = document.getElementById('vid');
+const vidWrap = document.getElementById('vidWrap');
+const teloCv = document.getElementById('teloCv');
+const teloBar = document.getElementById('teloBar');
+const annotList = document.getElementById('annotList');
+const teloCtx = teloCv.getContext('2d');
+const TELO = { on:false, tool:'arrow', color:'#f2cc60', anns:[], draft:null, lastUid:null, win:2.0 };
+function vrect(){ const r = vid.getBoundingClientRect(); return {w:r.width, h:r.height}; }
+function sizeCanvas(){ const {w,h} = vrect(); teloCv.width = w; teloCv.height = h; }
+window.addEventListener('resize', () => { sizeCanvas(); paint(); });
+vid.addEventListener('loadedmetadata', sizeCanvas);
+function norm(e){
+  const r = teloCv.getBoundingClientRect();
+  const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+  return [x, y];
+}
+function xy(p){ const {w,h} = vrect(); return [p[0]*w, p[1]*h]; }
+function drawArrow(ctx, pts, color, alpha){
+  const [x0,y0] = xy(pts[0]); const [x1,y1] = xy(pts[pts.length-1]);
+  ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  const ang = Math.atan2(y1-y0, x1-x0), L = 12;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x1 - L*Math.cos(ang - Math.PI/6), y1 - L*Math.sin(ang - Math.PI/6));
+  ctx.lineTo(x1 - L*Math.cos(ang + Math.PI/6), y1 - L*Math.sin(ang + Math.PI/6));
+  ctx.closePath(); ctx.fill();
+}
+function drawStroke(ctx, ann, alpha){
+  ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = ann.color; ctx.globalAlpha = alpha;
+  if (ann.tool === 'arrow'){ drawArrow(ctx, ann.points, ann.color, alpha); return; }
+  if (ann.tool === 'rect'){
+    const [x0,y0] = xy(ann.points[0]); const [x1,y1] = xy(ann.points[ann.points.length-1]);
+    ctx.strokeRect(x0, y0, x1-x0, y1-y0); return;
+  }
+  ctx.beginPath(); const [fx,fy] = xy(ann.points[0]); ctx.moveTo(fx,fy);
+  for (let i=1;i<ann.points.length;i++){ const [px,py] = xy(ann.points[i]); ctx.lineTo(px,py); }
+  ctx.stroke();
+}
+function paint(){
+  if (!teloCtx) return;
+  teloCtx.clearRect(0,0,teloCv.width,teloCv.height);
+  if (!TELO.on) return;
+  const now = vid.currentTime || 0;
+  for (const a of TELO.anns){
+    const d = Math.abs(a.t - now);
+    if (d <= TELO.win) drawStroke(teloCtx, a, Math.max(0.25, 1 - d/TELO.win));
+  }
+  if (TELO.draft) drawStroke(teloCtx, TELO.draft, 1);
+}
+vid.addEventListener('timeupdate', paint);
+vid.addEventListener('seeked', paint);
+vid.addEventListener('pause', paint);
+async function loadAnns(){
+  try {
+    const r = await fetch('/api/annotations/' + clipId);
+    if (!r.ok){ TELO.anns = []; renderList(); return; }
+    const d = await r.json();
+    TELO.anns = Array.isArray(d.items) ? d.items : [];
+    renderList();
+  } catch(_) { TELO.anns = []; }
+}
+function renderList(){
+  annotList.innerHTML = '';
+  for (const a of [...TELO.anns].reverse()){
+    const row = document.createElement('div'); row.className = 'arow';
+    const ts = document.createElement('span'); ts.className = 'ats'; ts.textContent = a.t.toFixed(1) + 's';
+    ts.addEventListener('click', () => { vid.currentTime = a.t; vid.pause(); });
+    const tag = document.createElement('span'); tag.textContent = a.tool + (a.label ? ' · ' + a.label : '');
+    const del = document.createElement('span'); del.className = 'adel'; del.textContent = '✕';
+    del.addEventListener('click', async () => {
+      try {
+        const r = await fetch('/api/annotations/' + clipId + '/' + a.uid, {method:'DELETE'});
+        if (r.ok){ TELO.anns = TELO.anns.filter(x => x.uid !== a.uid); renderList(); paint(); }
+      } catch(_) {}
+    });
+    row.appendChild(ts); row.appendChild(tag); row.appendChild(del);
+    annotList.appendChild(row);
+  }
+}
+function setTeloOn(on){
+  TELO.on = on;
+  vidWrap.classList.toggle('telo', on);
+  teloBar.classList.toggle('on', on);
+  vid.controls = !on;   // 画板模式:画面全给画笔,空格=播放/暂停,点击=画
+  const btn = document.getElementById('teloBtn');
+  btn.style.background = on ? 'var(--acc)' : 'var(--panel)';
+  btn.style.color = on ? 'var(--bg)' : 'var(--fg)';
+  document.getElementById('teloStatus').textContent = on ? '暂停视频直接画 · 空格播放/暂停 · Esc 退出画板' : '';
+  paint();
+}
+document.getElementById('teloBtn').addEventListener('click', () => setTeloOn(!TELO.on));
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && TELO.on){ e.preventDefault(); vid.paused ? vid.play() : vid.pause(); }
+  if (e.code === 'Escape' && TELO.on) setTeloOn(false);
+});
+teloBar.querySelectorAll('.tbtn').forEach(b => b.addEventListener('click', () => {
+  TELO.tool = b.dataset.tool;
+  teloBar.querySelectorAll('.tbtn').forEach(x => x.classList.toggle('active', x === b));
+}));
+teloBar.querySelectorAll('.sw').forEach(b => b.addEventListener('click', () => {
+  TELO.color = b.dataset.color;
+  teloBar.querySelectorAll('.sw').forEach(x => x.classList.toggle('active', x === b));
+}));
+teloCv.addEventListener('pointerdown', e => {
+  if (!TELO.on) return;
+  vid.pause();
+  TELO.draft = { tool: TELO.tool, color: TELO.color, points: [norm(e)], t: vid.currentTime || 0 };
+  teloCv.setPointerCapture(e.pointerId);
+});
+teloCv.addEventListener('pointermove', e => {
+  if (!TELO.draft) return;
+  const p = norm(e);
+  const last = TELO.draft.points[TELO.draft.points.length-1];
+  if (Math.abs(p[0]-last[0]) > 0.002 || Math.abs(p[1]-last[1]) > 0.002) TELO.draft.points.push(p);
+  paint();
+});
+function endDraft(){
+  if (!TELO.draft) return;
+  const draft = TELO.draft; TELO.draft = null;
+  if (draft.points.length < 2){ paint(); return; }
+  fetch('/api/annotations/' + clipId, {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({t: draft.t, tool: draft.tool, color: draft.color, points: draft.points})})
+    .then(r => r.json())
+    .then(d => {
+      if (d.uid){ TELO.anns.push(d); TELO.lastUid = d.uid; renderList(); document.getElementById('teloStatus').textContent = '已保存 ✓'; }
+      else { document.getElementById('teloStatus').textContent = '⚠ 保存失败: ' + (d.error || ''); }
+    })
+    .catch(err => { document.getElementById('teloStatus').textContent = '⚠ 保存失败: ' + err.message; })
+    .finally(paint);
+}
+teloCv.addEventListener('pointerup', endDraft);
+teloCv.addEventListener('pointercancel', () => { TELO.draft = null; paint(); });
+document.getElementById('teloUndo').addEventListener('click', async () => {
+  if (!TELO.lastUid){ document.getElementById('teloStatus').textContent = '没有可撤销的笔画'; return; }
+  try {
+    const r = await fetch('/api/annotations/' + clipId + '/' + TELO.lastUid, {method:'DELETE'});
+    if (r.ok){ TELO.anns = TELO.anns.filter(x => x.uid !== TELO.lastUid); TELO.lastUid = null; renderList(); paint(); }
+  } catch(_) {}
+});
+document.getElementById('frameExport').addEventListener('click', () => {
+  if (!TELO.on){ document.getElementById('teloStatus').textContent = '先点 ✏ Telestration 进入画板模式'; return; }
+  const {w,h} = vrect();
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  try { ctx.drawImage(vid, 0, 0, w, h); } catch(_) { ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h); }
+  const now = vid.currentTime || 0;
+  for (const a of TELO.anns) if (Math.abs(a.t - now) <= TELO.win) drawStroke(ctx, a, 1);
+  cv.toBlob(blob => {
+    if (!blob){ document.getElementById('teloStatus').textContent = '⚠ export failed'; return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = clipId + '-t' + now.toFixed(1) + '-telestration.png';
+    a.click(); URL.revokeObjectURL(a.href);
+    document.getElementById('teloStatus').textContent = 'frame PNG exported';
+  }, 'image/png');
+});
+loadAnns();
 </script>
 </body>
 </html>

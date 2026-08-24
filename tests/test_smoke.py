@@ -18,6 +18,8 @@ def test_routes_registered():
         "/api/health",
         "/api/upload",
         "/api/agent/chat",
+        "/api/annotations/<clip_id>",
+        "/api/annotations/<clip_id>/<uid>",
         "/api/report/<clip_id>",
         "/api/stream/<clip_id>",
         "/coach/<clip_id>",

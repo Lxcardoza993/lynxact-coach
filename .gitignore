@@ -5,6 +5,8 @@ __pycache__/
 .venv/
 venv/
 data/tmp/
+data/vault/
+data/annotations/
 # test/coverage/lint artifacts
 .pytest_cache/
 .ruff_cache/
