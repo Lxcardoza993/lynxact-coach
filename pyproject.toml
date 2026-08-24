@@ -29,3 +29,5 @@ select = ["E", "F", "W", "I", "UP", "B", "S"]
 "app.py" = ["E402", "S603"]
 # S101: assert is the correct assertion primitive in tests.
 "tests/*" = ["S101", "E402"]
+# S603: one-shot ops scripts call ffmpeg/ffprobe as fixed argv lists (no shell) — same rationale as app.py.
+"scripts/*" = ["S603"]
