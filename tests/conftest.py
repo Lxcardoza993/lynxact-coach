@@ -8,5 +8,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def _cloud_off(monkeypatch):
     for key in ("DRIVE_REFRESH_TOKEN", "DRIVE_ROOT_FOLDER_ID",
+                "DRIVE_VAULT_FOLDER_ID", "DRIVE_POSTER_FOLDER_ID",
+                "DRIVE_UPLOAD_FOLDER_ID", "DRIVE_CATALOG_FILE_ID",
                 "DRIVE_CLIENT_ID", "DRIVE_CLIENT_SECRET"):
         monkeypatch.delenv(key, raising=False)

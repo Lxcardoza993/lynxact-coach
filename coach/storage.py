@@ -92,25 +92,48 @@ def _headers(json_body: bool = False) -> dict:
     return h
 
 
-def drive_req(method: str, url: str, *, retry: int = 1, **kw) -> requests.Response:
-    """Drive API call with one automatic token-refresh-and-retry on 401."""
+_RETRYABLE = {401, 403, 429, 500, 502, 503}
+_RETRY_SLEEP = (1.0, 3.0, 8.0)     # Drive shard flake / burst-throttle backoff
+
+
+def drive_req(method: str, url: str, *, retry: int = 3, **kw) -> requests.Response:
+    """Drive API call with retries: token-refresh-on-401 plus short backoff
+    retries for Drive's transient shard-consistency 403s."""
     json_body = kw.pop("json_body", False)          # private flag for _headers
     headers = dict(kw.pop("headers", None) or {})
     headers.update(_headers(json_body=json_body))
-    headers.update(_headers())
-    try:
-        resp = requests.request(method, url, headers=headers, timeout=60, **kw)
-        if resp.status_code == 401 and retry:
-            with _state_lock:                 # force a fresh token
-                _token["access"] = None
-            return drive_req(method, url, retry=retry - 1, **kw)
-        return resp
-    except requests.RequestException as exc:
-        raise StorageError(str(exc)) from exc
+    last: requests.RequestException | None = None
+    for attempt in range(retry + 1):
+        try:
+            resp = requests.request(method, url, headers=headers, timeout=60, **kw)
+            if resp.status_code in _RETRYABLE and attempt < retry:
+                if resp.status_code in (401, 403):
+                    # stale-shard tokens 403 until propagation settles —
+                    # mint a fresh access token before retrying
+                    with _state_lock:
+                        _token["access"] = None
+                time.sleep(_RETRY_SLEEP[attempt])
+                continue
+            return resp
+        except requests.RequestException as exc:
+            last = exc
+            if attempt < retry:
+                time.sleep(_RETRY_SLEEP[attempt])
+                continue
+            break
+    raise StorageError(f"api call failed after retries: {last}")
+
+
+# Optional pinned-id overrides: once the migration script has resolved them,
+# these make startup deterministic and skip Drive's flaky name-queries.
+FOLDER_ENV = {"vault": "DRIVE_VAULT_FOLDER_ID",
+              "posters": "DRIVE_POSTER_FOLDER_ID",
+              "uploads": "DRIVE_UPLOAD_FOLDER_ID"}
 
 
 def _refresh_ids_locked() -> None:
-    """Resolve root/folder/catalog ids (env override or by-name lookup)."""
+    """Resolve root/folder/catalog ids: pin from env where present, else
+    by-name lookups (root self-heals by creating the folder when missing)."""
     env_root = os.environ.get("DRIVE_ROOT_FOLDER_ID")
     if env_root:
         root = env_root
@@ -118,7 +141,7 @@ def _refresh_ids_locked() -> None:
         q = (f"name='{ROOT_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' "
              "and 'root' in parents and trashed=false")
         resp = drive_req("GET", DRIVE_API + "/files",
-                         params={"q": q, "fields": "files(id)", "pageSize": 5})
+                         params={"q": q, "fields": "files(id)", "pageSize": 5, "supportsAllDrives": "true"})
         files = (resp.json().get("files") or []) if resp.status_code == 200 else []
         if files:
             root = files[0]["id"]
@@ -132,18 +155,26 @@ def _refresh_ids_locked() -> None:
     _ids["root"] = root
     _ids["folders"] = {}
     for sub in (VAULT_FOLDER, POSTER_FOLDER, UPLOAD_FOLDER):
+        env_fid = os.environ.get(FOLDER_ENV[sub])
+        if env_fid:
+            _ids["folders"][sub] = env_fid
+            continue
         q = (f"name='{sub}' and mimeType='application/vnd.google-apps.folder' "
              f"and '{root}' in parents and trashed=false")
         resp = drive_req("GET", DRIVE_API + "/files",
-                         params={"q": q, "fields": "files(id)", "pageSize": 5})
+                         params={"q": q, "fields": "files(id)", "pageSize": 5, "supportsAllDrives": "true"})
         files = (resp.json().get("files") or []) if resp.status_code == 200 else []
         if files:
             _ids["folders"][sub] = files[0]["id"]
-    q = (f"name='{CATALOG_NAME}' and '{root}' in parents and trashed=false")
-    resp = drive_req("GET", DRIVE_API + "/files",
-                     params={"q": q, "fields": "files(id)", "pageSize": 5})
-    files = (resp.json().get("files") or []) if resp.status_code == 200 else []
-    _ids["catalog"] = files[0]["id"] if files else None
+    env_catalog = os.environ.get("DRIVE_CATALOG_FILE_ID")
+    if env_catalog:
+        _ids["catalog"] = env_catalog
+    else:
+        q = (f"name='{CATALOG_NAME}' and '{root}' in parents and trashed=false")
+        resp = drive_req("GET", DRIVE_API + "/files",
+                         params={"q": q, "fields": "files(id)", "pageSize": 5, "supportsAllDrives": "true"})
+        files = (resp.json().get("files") or []) if resp.status_code == 200 else []
+        _ids["catalog"] = files[0]["id"] if files else None
     _ids["ts"] = _now()
 
 
@@ -160,6 +191,11 @@ def root_id() -> str:
 def folder_id(name: str) -> str | None:
     ids = _ensure_ids()
     return ids["folders"].get(name)
+
+
+def catalog_id() -> str | None:
+    """file_id of catalog.json (None when it doesn't exist on Drive yet)."""
+    return _ensure_ids()["catalog"]
 
 
 def list_folder(folder: str | None) -> list[dict]:
@@ -184,7 +220,7 @@ def get_catalog() -> dict:
     if not file_id:
         _catalog["data"], _catalog["ts"] = {}, now
         return {}
-    resp = drive_req("GET", DRIVE_API + f"/files/{file_id}", params={"alt": "media"})
+    resp = drive_req("GET", DRIVE_API + f"/files/{file_id}", params={"alt": "media", "supportsAllDrives": "true"})
     if resp.status_code != 200:
         raise StorageError(f"catalog fetch failed: {resp.status_code}")
     try:
@@ -209,15 +245,17 @@ def _catalog_write(data: dict) -> None:
         if file_id:
             resp = drive_req("PATCH", DRIVE_UPLOAD + f"/files/{file_id}",
                              params={"uploadType": "multipart"},
-                             data={"metadata": json.dumps({"name": CATALOG_NAME}),
-                                   "media": ("catalog.json", payload, "application/json")})
+                             files={"metadata": (None, json.dumps({"name": CATALOG_NAME}),
+                                                "application/json"),
+                                    "media": ("catalog.json", payload, "application/json")})
         else:
             resp = drive_req("POST", DRIVE_UPLOAD + "/files",
                              params={"uploadType": "multipart"},
-                             data={"metadata": json.dumps({
+                             files={"metadata": (None, json.dumps({
                                  "name": CATALOG_NAME,
                                  "parents": [root_id()],
-                             }), "media": ("catalog.json", payload, "application/json")})
+                             }), "application/json"),
+                                 "media": ("catalog.json", payload, "application/json")})
         if resp.status_code not in (200, 201):
             raise StorageError(f"catalog write failed: {resp.status_code}")
         with _state_lock:
@@ -257,13 +295,13 @@ def fetch_range(file_id: str, start: int | None, end: int | None):
             headers["Range"] = f"bytes={start}-"
         else:
             headers["Range"] = f"bytes=-{end}"
-    resp = drive_req("GET", _file_url(file_id), params={"alt": "media"},
+    resp = drive_req("GET", _file_url(file_id), params={"alt": "media", "supportsAllDrives": "true"},
                      headers=headers, stream=True)
     return resp.status_code, resp.headers, resp
 
 
 def get_bytes(file_id: str) -> bytes:
-    resp = drive_req("GET", _file_url(file_id), params={"alt": "media"})
+    resp = drive_req("GET", _file_url(file_id), params={"alt": "media", "supportsAllDrives": "true"})
     if resp.status_code != 200:
         raise StorageError(f"media fetch failed: {resp.status_code}")
     return resp.content
@@ -273,7 +311,7 @@ def materialize(file_id: str, cache_name: str) -> str:
     """Full-download a Drive file into the local cloud cache; return its path."""
     os.makedirs(CACHE_DIR, exist_ok=True)
     dest = os.path.join(CACHE_DIR, os.path.basename(cache_name))
-    resp = drive_req("GET", _file_url(file_id), params={"alt": "media"}, stream=True)
+    resp = drive_req("GET", _file_url(file_id), params={"alt": "media", "supportsAllDrives": "true"}, stream=True)
     if resp.status_code != 200:
         raise StorageError(f"materialize failed: {resp.status_code}")
     tmp = dest + ".part"

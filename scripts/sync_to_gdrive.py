@@ -51,6 +51,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-upload", action="store_true",
                         help="skip rclone transfers, only (re)write the catalog")
+    parser.add_argument("--write-env", action="store_true",
+                        help="pin the resolved Drive ids into .env (deterministic startup, "
+                             "value-safe: key=value lines written without printing)")
     args = parser.parse_args()
 
     if not storage.enabled():
@@ -121,6 +124,27 @@ def main() -> None:
         sys.exit(1)
     if missing:
         print(f"note: {len(missing)} videos have no poster on Drive: {missing[:5]}…")
+
+    if args.write_env:
+        pins = {
+            "DRIVE_ROOT_FOLDER_ID": storage.root_id(),
+            "DRIVE_VAULT_FOLDER_ID": vault_id,
+            "DRIVE_POSTER_FOLDER_ID": poster_id,
+            "DRIVE_UPLOAD_FOLDER_ID": storage.folder_id(storage.UPLOAD_FOLDER),
+            "DRIVE_CATALOG_FILE_ID": storage.catalog_id(),
+        }
+        if not all(pins.values()):
+            print("!! cannot pin env ids — some folders unresolved; aborting")
+            sys.exit(1)
+        env_path = os.path.join(BASE, ".env")
+        with open(env_path, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+        for key, value in pins.items():
+            lines = [ln for ln in lines if not ln.startswith(key + "=")]
+            lines.append(f"{key}={value}")
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        print("env pinned with 5 DRIVE id keys (values not printed)")
 
 
 if __name__ == "__main__":

@@ -103,9 +103,10 @@ def fresh(monkeypatch, tmp_path):
     monkeypatch.setattr(storage, "CACHE_DIR", str(tmp_path / "cache"))
     monkeypatch.setattr(storage, "CATALOG_LOCK", str(tmp_path / "catalog.lock"))
     monkeypatch.setenv("DRIVE_REFRESH_TOKEN", "rt")
-    monkeypatch.delenv("DRIVE_ROOT_FOLDER_ID", raising=False)
-    monkeypatch.delenv("DRIVE_CLIENT_ID", raising=False)
-    monkeypatch.delenv("DRIVE_CLIENT_SECRET", raising=False)
+    for key in ("DRIVE_ROOT_FOLDER_ID", "DRIVE_VAULT_FOLDER_ID",
+                "DRIVE_POSTER_FOLDER_ID", "DRIVE_UPLOAD_FOLDER_ID",
+                "DRIVE_CATALOG_FILE_ID", "DRIVE_CLIENT_ID", "DRIVE_CLIENT_SECRET"):
+        monkeypatch.delenv(key, raising=False)
     return drive
 
 
@@ -139,12 +140,32 @@ def test_access_token_cached_then_refreshed(fresh, monkeypatch):
     assert len([c for c in fresh.calls if c[0] == "OAUTH"]) == 2
 
 
-def test_drive_req_401_refreshes_and_retries(fresh):
+def test_drive_req_401_refreshes_and_retries(fresh, monkeypatch):
+    monkeypatch.setattr(storage.time, "sleep", lambda _s: None)
     fresh.add("GET", "files", FakeResp(401))
     fresh.add("GET", "files", FakeResp(200, json_data={"files": []}))
     resp = storage.drive_req("GET", storage.DRIVE_API + "/files")
     assert resp.status_code == 200
     assert len(fresh.get_calls()) == 2                      # exactly one retry
+
+
+def test_drive_req_403_shard_flake_retries(fresh, monkeypatch):
+    """Transient Drive shard-consistency 403s self-heal on retry."""
+    monkeypatch.setattr(storage.time, "sleep", lambda _s: None)
+    fresh.add("GET", "files", FakeResp(403))
+    fresh.add("GET", "files", FakeResp(200, json_data={"files": [{"id": "x"}]}))
+    resp = storage.drive_req("GET", storage.DRIVE_API + "/files")
+    assert resp.status_code == 200
+    assert len(fresh.get_calls()) == 2
+
+
+def test_drive_req_retries_exhausted_returns_last(fresh, monkeypatch):
+    monkeypatch.setattr(storage.time, "sleep", lambda _s: None)
+    for _ in range(4):                                    # retry=3 -> 4 attempts
+        fresh.add("GET", "files", FakeResp(500))
+    resp = storage.drive_req("GET", storage.DRIVE_API + "/files")
+    assert resp.status_code == 500
+    assert len(fresh.get_calls()) == 4
 
 
 # --- id resolution / catalog -------------------------------------------------
@@ -160,6 +181,20 @@ def test_root_resolved_once_and_cached(fresh):
     assert storage.root_id() == "rootA"                     # all cached
     assert storage.folder_id("posters") == "p1"
     assert len(fresh.get_calls()) == n
+
+
+def test_pinned_env_ids_skip_queries(fresh, monkeypatch):
+    """With id pins in the env, resolution is offline — zero Drive calls."""
+    monkeypatch.setenv("DRIVE_ROOT_FOLDER_ID", "r")
+    monkeypatch.setenv("DRIVE_VAULT_FOLDER_ID", "v")
+    monkeypatch.setenv("DRIVE_POSTER_FOLDER_ID", "p")
+    monkeypatch.setenv("DRIVE_UPLOAD_FOLDER_ID", "u")
+    monkeypatch.setenv("DRIVE_CATALOG_FILE_ID", "c")
+    assert storage.root_id() == "r"
+    assert storage.folder_id("vault") == "v"
+    assert storage.folder_id("posts") is None
+    assert storage._ensure_ids()["catalog"] == "c"
+    assert fresh.get_calls() == []
 
 
 def test_get_catalog_empty_when_missing(fresh):
@@ -194,7 +229,7 @@ def test_catalog_write_create_then_update(fresh, monkeypatch):
               FakeResp(201, json_data={"id": "catNew"}))
     storage.update_catalog(lambda cat: cat.update({"n": 1}))
     _m, _k, kw = fresh.calls[-1]
-    assert json.loads(kw["data"]["media"][1]) == {"n": 1}   # payload went up
+    assert json.loads(kw["files"]["media"][1]) == {"n": 1}   # payload went up
     assert storage._ids["catalog"] == "catNew"
     fresh.add("PATCH", "/upload/drive/v3/files/catNew", FakeResp(200))
     storage.update_catalog(lambda cat: cat.update({"n": 2}))
@@ -214,7 +249,7 @@ def test_fetch_range_forwards_range_header(fresh):
     assert hdr.get("Content-Range") == "bytes 0-99/1000"
     _m, _k, kw = fresh.calls[-1]
     assert kw["headers"]["Range"] == "bytes=0-99"
-    assert kw["params"] == {"alt": "media"}
+    assert kw["params"]["alt"] == "media"
 
 
 def test_materialize_writes_cache_basename(fresh):
