@@ -46,9 +46,16 @@
   .brand-tag {
     font-family:var(--font-mono); font-size:10px; letter-spacing:.16em; font-weight:600;
     color:var(--dim); border:1px solid var(--line2); border-radius:999px; padding:2px 10px;
+    white-space:nowrap;
   }
-  .topstat { margin-left:auto; font-family:var(--font-mono); font-size:12px; color:var(--dim); }
+  .topstat { margin-left:auto; font-family:var(--font-mono); font-size:12px; color:var(--dim); white-space:nowrap; }
   .topstat b { color:var(--acc); font-weight:600; }
+  .langbtn {
+    height:30px; padding:0 12px; border-radius:999px; border:1px solid var(--line2);
+    background:var(--bg2); color:var(--dim); font:600 12px var(--font-mono); cursor:pointer;
+    transition:color .12s, border-color .12s;
+  }
+  .langbtn:hover { color:var(--acc); border-color:var(--acc); }
 
   /* ---- hero / command bar ---- */
   .hero { padding:36px 28px 8px; max-width:1500px; margin:0 auto; }
@@ -128,6 +135,7 @@
   .badge {
     display:inline-block; margin-top:10px; font-size:10px; letter-spacing:.12em; font-weight:800;
     padding:3px 10px; border-radius:999px; border:1px solid var(--line2); color:var(--faint);
+    white-space:nowrap;
   }
   .baked .badge { color:var(--gold); border-color:rgba(255,209,102,.5); background:rgba(255,209,102,.08); }
   .cdel {
@@ -186,24 +194,24 @@
 <body>
 <header class="topbar">
   <span class="brand">Lynx<span class="x">Act</span> Coach</span>
-  <span class="brand-tag">TACTICAL FILM ROOM</span>
-  <span class="topstat"><b>{{ clips | length }}</b> CLIPS ON TAPE</span>
+  <span class="brand-tag" data-i18n="film-room">战术胶片室</span>
+  <span class="topstat"><b>{{ clips | length }}</b> <span data-i18n="on-tape">在库片段</span></span>
+  <button type="button" class="langbtn" id="langBtn" title="switch language">EN</button>
 </header>
 
 <main>
   <section class="hero">
-    <h1>Pick a clip, break it down.</h1>
-    <p class="sub">Live tactical analysis: commentary transcription, CV-fusion annotations and Claude event cards.
-      选一个片段开始实时分析:解说转写 + 视觉融合标注 + AI 事件卡。</p>
+    <h1 data-i18n="hero-h1">选一个片段,拆解它。</h1>
+    <p class="sub"><span data-i18n="hero-sub">实时战术分析:解说转写、视觉融合标注、AI 事件卡。</span></p>
     <div class="cmdbar">
       <form action="/api/upload" method="post" enctype="multipart/form-data" style="display:contents">
         <label class="btn primary filebtn">
           <input type="file" name="file" accept="video/mp4" required>
-          Upload &amp; analyze
+          <span data-i18n="upload">上传并分析</span>
         </label>
       </form>
-      <button type="button" class="btn ghost" id="pickBtn">Library cloud ▾</button>
-      <span class="hint">MP4 · live transcription + Claude analysis (needs Speechmatics key)</span>
+      <button type="button" class="btn ghost" id="pickBtn"><span data-i18n="library">云端片库 ▾</span></button>
+      <span class="hint" data-i18n="hint">MP4 · 实时转写 + Claude 分析(需要 Speechmatics 密钥)</span>
     </div>
   </section>
 
@@ -223,13 +231,13 @@
         <div class="body">
           <div class="t">{{ c.title }}</div>
           <div class="m">{{ c.id }}.mp4{% if c.duration %} <span class="dur">· {{ c.duration | round(1) }}s</span>{% endif %}</div>
-          {% if c.baked %}<span class="badge">▶ DEMO READY</span>{% else %}<span class="badge">CLIP</span>{% endif %}
+          {% if c.baked %}<span class="badge">▶ <span data-i18n="badge-demo">演示就绪</span></span>{% else %}<span class="badge" data-i18n="badge-clip">片段</span>{% endif %}
         </div>
       </a>
       <button class="cdel" data-id="{{ c.id }}" data-title="{{ c.title }}" title="delete this clip" aria-label="delete {{ c.title }}">✕</button>
     </div>
   {% else %}
-    <div class="empty"><b>Film room is empty.</b><br>上传一个片段,或者从云端素材库挑一支开始分析。</div>
+    <div class="empty"><b data-i18n="empty-b">片库是空的。</b><br><span data-i18n="empty-sub">上传一个片段,或者从云端片库挑一支开始分析。</span></div>
   {% endfor %}
   </div>
 </main>
@@ -237,7 +245,7 @@
 <div id="pickerWrap" role="dialog" aria-label="云端素材库">
   <div id="pickerBox">
     <div id="pickerHead">
-      <b>云端素材库 <i>·</i> 选择一个开始分析</b>
+      <b><span data-i18n="picker-head">云端素材库</span> <i>·</i> <span data-i18n="picker-head2">选择一个开始分析</span></b>
       <button type="button" class="xbtn" id="pickerClose" aria-label="close">✕</button>
     </div>
     <div id="pickerList"></div>
@@ -245,6 +253,70 @@
 </div>
 
 <script>
+// ---- i18n: default zh, toggle remembers the choice in localStorage ----
+const I18N = {
+  zh: {
+    'film-room': '战术胶片室',
+    'on-tape': '在库片段',
+    'hero-h1': '选一个片段,拆解它。',
+    'hero-sub': '实时战术分析:解说转写、视觉融合标注、AI 事件卡。',
+    upload: '上传并分析',
+    library: '云端片库 ▾',
+    hint: 'MP4 · 实时转写 + Claude 分析(需要 Speechmatics 密钥)',
+    'badge-demo': '演示就绪',
+    'badge-clip': '片段',
+    'empty-b': '片库是空的。',
+    'empty-sub': '上传一个片段,或者从云端片库挑一支开始分析。',
+    'picker-head': '云端素材库',
+    'picker-head2': '选择一个开始分析',
+    loading: '加载中…',
+    'picker-empty': '库是空的:先在上方上传一个片,它就进云端了。',
+    'load-fail': '加载失败: ',
+    'del-confirm': '删除「%s」?此操作不可撤销。',
+    'del-prompt': '管理员口令(第一次删除时输入):',
+    'del-bad': '口令错误,或删除功能未开启',
+    'del-fail': '删除失败: ',
+  },
+  en: {
+    'film-room': 'TACTICAL FILM ROOM',
+    'on-tape': 'CLIPS ON TAPE',
+    'hero-h1': 'Pick a clip, break it down.',
+    'hero-sub': 'Live tactical analysis: commentary transcription, CV-fusion annotations and Claude event cards.',
+    upload: 'Upload & analyze',
+    library: 'Library cloud ▾',
+    hint: 'MP4 · live transcription + Claude analysis (needs Speechmatics key)',
+    'badge-demo': 'DEMO READY',
+    'badge-clip': 'CLIP',
+    'empty-b': 'Film room is empty.',
+    'empty-sub': 'Upload a clip, or pick one from the cloud library to start analyzing.',
+    'picker-head': 'Cloud library',
+    'picker-head2': 'pick a clip to analyze',
+    loading: 'Loading…',
+    'picker-empty': 'Library is empty: upload a clip above and it lands in the cloud.',
+    'load-fail': 'Load failed: ',
+    'del-confirm': 'Delete "%s"? This cannot be undone.',
+    'del-prompt': 'Admin passphrase (first delete only):',
+    'del-bad': 'Wrong passphrase, or delete is disabled',
+    'del-fail': 'Delete failed: ',
+  },
+};
+let lang = localStorage.getItem('lynxact_lang') || 'zh';
+function t(k){ return (I18N[lang] || I18N.en)[k] ?? k; }
+function applyI18n(){
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  const btn = document.getElementById('langBtn');
+  btn.textContent = lang === 'zh' ? 'EN' : '中';
+}
+document.getElementById('langBtn').addEventListener('click', () => {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lynxact_lang', lang);
+  applyI18n();
+});
+applyI18n();
+
 // pick a file from the styled label button → submit the upload form at once
 document.querySelector('.filebtn input[type=file]').addEventListener('change', function(){
   this.form.requestSubmit();
@@ -252,18 +324,18 @@ document.querySelector('.filebtn input[type=file]').addEventListener('change', f
 function deleteClipBtn(btn, id, title, redirectTo){
   btn.addEventListener('click', async () => {
     const KEY = 'lynxact_admin_token';
-    if (!confirm('删除「' + title + '」?此操作不可撤销。')) return;
+    if (!confirm(t('del-confirm').replace('%s', title))) return;
     let token = sessionStorage.getItem(KEY);
-    if (!token){ token = prompt('管理员口令(第一次删除时输入):'); if (!token) return; }
+    if (!token){ token = prompt(t('del-prompt')); if (!token) return; }
     try {
       const r = await fetch('/api/clips/' + encodeURIComponent(id),
         {method:'DELETE', headers:{'X-Admin-Token': token}});
-      if (r.status === 403){ sessionStorage.removeItem(KEY); alert('口令错误,或删除功能未开启'); return; }
+      if (r.status === 403){ sessionStorage.removeItem(KEY); alert(t('del-bad')); return; }
       const d = await r.json();
-      if (!r.ok){ alert('删除失败: ' + (d.error || r.status)); return; }
+      if (!r.ok){ alert(t('del-fail') + (d.error || r.status)); return; }
       sessionStorage.setItem(KEY, token);
       location.href = redirectTo;
-    } catch(err){ alert('删除失败: ' + err.message); }
+    } catch(err){ alert(t('del-fail') + err.message); }
   });
 }
 document.querySelectorAll('.card .cdel').forEach(b =>
@@ -282,7 +354,7 @@ document.querySelectorAll('.card .cdel').forEach(b =>
   };
   document.getElementById('pickBtn').addEventListener('click', async () => {
     wrap.style.display = 'flex';
-    list.replaceChildren(el('div', 'pt-m', '加载中…'));
+    list.replaceChildren(el('div', 'pt-m', t('loading')));
     try {
       const r = await fetch('/api/library');
       const d = await r.json();
@@ -298,22 +370,22 @@ document.querySelectorAll('.card .cdel').forEach(b =>
           thumb.replaceWith(el('div', 'pthumb pph',
             ((c.title || '▶').trim()[0] || '▶').toUpperCase()));
         });
-        const t = el('div', 'pt');
-        t.append(el('div', 'pt-t', c.title || c.id));
-        t.append(el('div', 'pt-m', c.id + '.mp4'
+        const tEl = el('div', 'pt');
+        tEl.append(el('div', 'pt-t', c.title || c.id));
+        tEl.append(el('div', 'pt-m', c.id + '.mp4'
           + (c.duration ? ' · ' + Number(c.duration).toFixed(1) + 's' : '')));
-        row.append(thumb, t);
+        row.append(thumb, tEl);
         row.addEventListener('click', () => {
           location.href = '/coach/' + encodeURIComponent(c.id);
         });
         list.append(row);
       });
       if (!(d.clips || []).length) {
-        list.replaceChildren(el('div', 'pt-m', '库是空的:先在上方上传一个片,它就进云端了。'));
+        list.replaceChildren(el('div', 'pt-m', t('picker-empty')));
       }
     } catch(err) {
       list.replaceChildren();
-      list.append(el('div', '', '加载失败: ' + err.message));
+      list.append(el('div', '', t('load-fail') + err.message));
     }
   });
   document.getElementById('pickerClose').addEventListener('click',

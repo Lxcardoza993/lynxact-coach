@@ -71,6 +71,7 @@
   .tag {
     flex:0 0 auto; font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; font-weight:700;
     padding:3px 10px; border-radius:999px; border:1px solid var(--line2); color:var(--dim);
+    white-space:nowrap;
   }
   .tag.gold { color:var(--gold); border-color:rgba(255,209,102,.5); background:rgba(255,209,102,.07); }
   .tag.ok { color:var(--ok); border-color:rgba(74,222,128,.45); background:rgba(74,222,128,.07); }
@@ -86,6 +87,12 @@
   #status[data-state="done"]::before { background:var(--ok); }
   #status[data-state="err"]::before { background:var(--bad); }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+  .langbtn {
+    height:30px; padding:0 12px; border-radius:999px; border:1px solid var(--line2);
+    background:var(--bg2); color:var(--dim); font:600 12px var(--font-mono); cursor:pointer;
+    transition:color .12s, border-color .12s;
+  }
+  .langbtn:hover { color:var(--acc); border-color:var(--acc); }
 
   /* ---- action toolbar ---- */
   .toolbar {
@@ -232,29 +239,30 @@
 </head>
 <body>
 <header class="topbar">
-  <a class="back" href="/" title="back to library">←</a>
+  <a class="back" href="/" title="back to library" data-i18n-title="back">←</a>
   <h1>{{ clip.title }}</h1>
-  <span class="tag gold" title="baked fallback analysis">{% if clip.baked %}REPLAY{% else %}CLIP{% endif %}</span>
+  <span class="tag gold" title="baked fallback analysis">{% if clip.baked %}<span data-i18n="tag-replay">重放</span>{% else %}<span data-i18n="tag-clip">片段</span>{% endif %}</span>
   {% if clip.cv_context %}
   <span class="tag ok">CV {{ clip.cv_context.fusion_label }} {{ '%.0f'|format(clip.cv_context.confidence * 100) }}%</span>
   {% endif %}
-  <span id="status" data-state="idle">idle - press play</span>
+  <span id="status" data-state="idle"></span>
+  <button type="button" class="langbtn" id="langBtn" title="switch language">EN</button>
 </header>
 
 <div class="toolbar">
-  <a id="liveBtn" class="btn sm ghost" href="?mode=live">Live →</a>
-  <button id="teloBtn" class="btn sm ghost" title="pause the video and draw arrows, lines and boxes anchored to the timeline">Telestration</button>
+  <a id="liveBtn" class="btn sm ghost" href="?mode=live"><span data-i18n="live">直播 →</span></a>
+  <button id="teloBtn" class="btn sm ghost" data-i18n-title="telo-tip"><span data-i18n="telo">战术画板</span></button>
   <span class="gsep"></span>
-  <button id="reportBtn" class="btn sm primary" disabled>Report</button>
-  <button id="exportBtn" class="btn sm gold" disabled>Export PNG</button>
+  <button id="reportBtn" class="btn sm primary" disabled><span data-i18n="report">报告</span></button>
+  <button id="exportBtn" class="btn sm gold" disabled><span data-i18n="export">导出 PNG</span></button>
   <span class="gsep"></span>
   <span class="algroup">
-    <label for="offsetIn">ALIGN</label>
+    <label for="offsetIn" data-i18n="align">对齐</label>
     <input id="offsetIn" type="number" step="0.1" value="0" title="shift the whole timeline: events and commentary move together">
-    <button id="offsetSave" class="btn sm ghost" title="align the clip to its proper start (trimmed intros etc.)">Apply</button>
+    <button id="offsetSave" class="btn sm ghost" data-i18n-title="align-tip"><span data-i18n="apply">应用</span></button>
   </span>
   <span class="spacer"></span>
-  <button id="delBtn" class="btn sm danger" title="delete this clip (admin passphrase required)">Delete</button>
+  <button id="delBtn" class="btn sm danger" data-i18n-title="del-tip"><span data-i18n="del">删除</span></button>
 </div>
 
 <main>
@@ -264,49 +272,210 @@
       <canvas id="teloCv"></canvas>
     </div>
     {% if clip.cv_context %}
-    <div class="cv">Fusion votes:
+    <div class="cv"><span data-i18n="fusion">融合投票</span>:
       {% for s in clip.cv_context.sources %}<b>{{ s.name }}</b>→{{ s.vote }}(w{{ s.weight }}){% if not loop.last %}, {% endif %}{% endfor %}
       · gold=<b>{{ clip.cv_context.gold }}</b>
     </div>
     {% endif %}
     <div id="teloBar">
-      <button data-tool="arrow" class="tbtn active">Arrow</button>
-      <button data-tool="freehand" class="tbtn">Freehand</button>
-      <button data-tool="rect" class="tbtn">Rect</button>
+      <button data-tool="arrow" class="tbtn active" data-i18n="tool-arrow">箭头</button>
+      <button data-tool="freehand" class="tbtn" data-i18n="tool-freehand">手绘</button>
+      <button data-tool="rect" class="tbtn" data-i18n="tool-rect">矩形</button>
       <button class="sw active" data-color="#ffd166" style="background:#ffd166" title="gold"></button>
       <button class="sw" data-color="#3ee07f" style="background:#3ee07f" title="green"></button>
       <button class="sw" data-color="#6cc4ff" style="background:#6cc4ff" title="blue"></button>
       <button class="sw" data-color="#ff6b6b" style="background:#ff6b6b" title="red"></button>
-      <button id="teloUndo" class="tbtn">Undo</button>
-      <button id="frameExport" class="tbtn">Frame PNG</button>
+      <button id="teloUndo" class="tbtn" data-i18n="undo">撤销</button>
+      <button id="frameExport" class="tbtn" data-i18n="frame-png">导出帧</button>
       <span id="teloStatus"></span>
     </div>
     <div id="annotList"></div>
   </div>
 
   <div class="pane" id="commentary">
-    <div class="phead"><h2>Live commentary</h2></div>
+    <div class="phead"><h2 data-i18n="commentary">实时解说</h2></div>
     <div id="transcript"></div>
   </div>
 
-  <div id="cards"><div class="phead" style="flex:0 0 auto;padding:11px 4px 8px;border-bottom:1px solid var(--line)"><h2>Tactical event cards</h2></div></div>
+  <div id="cards"><div class="phead" style="flex:0 0 auto;padding:11px 4px 8px;border-bottom:1px solid var(--line)"><h2 data-i18n="cards">战术事件卡</h2></div></div>
 
   <div class="pane" id="coachPane">
-    <div class="phead"><h2>AI Coach</h2><span class="n">多轮追问 + 工具调用闭环 (analyze / 知识库 / 球员 / 训练计划)</span></div>
+    <div class="phead"><h2 data-i18n="coach">AI 教练</h2><span class="n" data-i18n="coach-note">多轮追问 + 工具调用闭环 (analyze / 知识库 / 球员 / 训练计划)</span></div>
     <div id="coachMsgs"></div>
     <div class="chatbar">
-      <input id="coachInput" placeholder="问教练:这个动作怎么改进?谁擅长?给我 3 天训练计划…">
-      <button id="coachSend" class="btn primary">发送</button>
+      <input id="coachInput" data-i18n-ph="coach-ph" placeholder="问教练:这个动作怎么改进?谁擅长?给我 3 天训练计划…">
+      <button id="coachSend" class="btn primary" data-i18n="send">发送</button>
     </div>
   </div>
 
   <div class="pane" id="reportPane">
-    <div class="phead"><h2>Full-match report</h2><span class="n" id="reportBy"></span></div>
+    <div class="phead"><h2 data-i18n="full-report">全场报告</h2><span class="n" id="reportBy"></span></div>
     <div id="reportBody"></div>
   </div>
 </main>
 
 <script>
+// ---- i18n: default zh, toggle remembers the choice in localStorage ----
+const I18N = {
+  zh: {
+    back: '返回片库',
+    'tag-replay': '重放',
+    'tag-clip': '片段',
+    idle: '空闲,按播放开始',
+    live: '直播 →',
+    telo: '战术画板',
+    'telo-tip': '暂停视频,直接画箭头/线条/方框,笔画锚定时间轴',
+    report: '报告',
+    export: '导出 PNG',
+    align: '对齐',
+    apply: '应用',
+    'align-tip': '整体平移时间轴:事件和解说一起移动',
+    del: '删除',
+    'del-tip': '删除这个片段(需要管理员口令)',
+    fusion: '融合投票',
+    'tool-arrow': '箭头',
+    'tool-freehand': '手绘',
+    'tool-rect': '矩形',
+    undo: '撤销',
+    'frame-png': '导出帧',
+    commentary: '实时解说',
+    cards: '战术事件卡',
+    coach: 'AI 教练',
+    'coach-note': '多轮追问 + 工具调用闭环 (analyze / 知识库 / 球员 / 训练计划)',
+    'coach-ph': '问教练:这个动作怎么改进?谁擅长?给我 3 天训练计划…',
+    send: '发送',
+    'full-report': '全场报告',
+    streaming: '流式生成中…',
+    'live-streaming': 'LIVE 实时生成中…',
+    done: '已完成',
+    'stream-err': '流错误',
+    'stream-closed': '⚠ 流已断开:按播放重试',
+    'offset-nan': '⚠ 偏移量必须是数字',
+    'offset-saved': '✅ 偏移 %ss 已保存',
+    'offset-fail': '⚠ 偏移保存失败: ',
+    'video-fail': '⚠ 视频加载失败:请检查片段文件',
+    'coach-thinking': '教练思考中…',
+    'req-fail': '请求失败: ',
+    generating: '生成中…',
+    'report-fail': '⚠ 报告失败: ',
+    'report-by': '由 %s 生成',
+    'no-cards': '⚠ 没有事件卡可导出',
+    'canvas-unsup': '⚠ 浏览器不支持 canvas 2D',
+    'top-moments': '高光时刻',
+    'live-analysis': 'LIVE 模型生成分析',
+    'tactical-analysis': '战术事件分析',
+    'png-footer': '由 LynxAct Coach 生成 · 解说、视觉融合与 LLM 事件卡',
+    'export-fail': '⚠ 导出失败',
+    'png-done': 'PNG 已导出',
+    'telo-help': '暂停视频直接画,空格播放/暂停,Esc 退出画板',
+    'saved': '已保存 ✓',
+    'save-fail': '⚠ 保存失败: ',
+    'nothing-undo': '没有可撤销的笔画',
+    'undo-fail': '⚠ 撤销失败 (HTTP %s)',
+    'undo-fail2': '⚠ 撤销失败',
+    'telo-first': '先点战术画板进入画板模式',
+    'frame-done': '帧 PNG 已导出',
+    'ann-fail': '⚠ 标注加载失败 (HTTP %s)',
+    'ann-fail2': '⚠ 标注加载失败',
+    'ann-del-fail': '⚠ 删除失败 (HTTP %s)',
+    'ann-del-fail2': '⚠ 删除失败',
+    'spec-unverified': '⚠ 未验证:无 CV/转写依据',
+    'del-confirm': '删除「%s」?此操作不可撤销。',
+    'del-prompt': '管理员口令(第一次删除时输入):',
+    'del-bad': '口令错误,或删除功能未开启',
+    'del-fail': '删除失败: ',
+  },
+  en: {
+    back: 'Back to library',
+    'tag-replay': 'REPLAY',
+    'tag-clip': 'CLIP',
+    idle: 'idle - press play',
+    live: 'Live →',
+    telo: 'Telestration',
+    'telo-tip': 'Pause the video and draw arrows, lines and boxes anchored to the timeline',
+    report: 'Report',
+    export: 'Export PNG',
+    align: 'ALIGN',
+    apply: 'Apply',
+    'align-tip': 'Shift the whole timeline: events and commentary move together',
+    del: 'Delete',
+    'del-tip': 'Delete this clip (admin passphrase required)',
+    fusion: 'Fusion votes',
+    'tool-arrow': 'Arrow',
+    'tool-freehand': 'Freehand',
+    'tool-rect': 'Rect',
+    undo: 'Undo',
+    'frame-png': 'Frame PNG',
+    commentary: 'Live commentary',
+    cards: 'Tactical event cards',
+    coach: 'AI Coach',
+    'coach-note': 'Multi-turn chat + tool loop (analyze / knowledge base / players / training plans)',
+    'coach-ph': 'Ask the coach: how do I improve this move? Who is best at it? Give me a 3-day plan…',
+    send: 'Send',
+    'full-report': 'Full-match report',
+    streaming: 'streaming…',
+    'live-streaming': 'LIVE streaming (model-generated)…',
+    done: 'done',
+    'stream-err': 'stream error',
+    'stream-closed': '⚠ stream closed - press play to retry',
+    'offset-nan': '⚠ offset must be a number',
+    'offset-saved': '✅ offset %ss saved',
+    'offset-fail': '⚠ offset save failed: ',
+    'video-fail': '⚠ video failed to load - check clip file',
+    'coach-thinking': 'Coach is thinking…',
+    'req-fail': 'Request failed: ',
+    generating: 'generating…',
+    'report-fail': '⚠ report failed: ',
+    'report-by': 'by %s',
+    'no-cards': '⚠ no cards to export',
+    'canvas-unsup': '⚠ canvas 2D unsupported',
+    'top-moments': 'Top Tactical Moments',
+    'live-analysis': 'LIVE model-generated analysis',
+    'tactical-analysis': 'tactical event analysis',
+    'png-footer': 'Generated by LynxAct Coach · commentary, CV-fusion and LLM event cards',
+    'export-fail': '⚠ export failed',
+    'png-done': 'PNG exported',
+    'telo-help': 'Pause the video to draw, Space play/pause, Esc exits the board',
+    'saved': 'Saved ✓',
+    'save-fail': '⚠ Save failed: ',
+    'nothing-undo': 'Nothing to undo',
+    'undo-fail': '⚠ Undo failed (HTTP %s)',
+    'undo-fail2': '⚠ Undo failed',
+    'telo-first': 'Open Telestration first',
+    'frame-done': 'frame PNG exported',
+    'ann-fail': '⚠ Annotation load failed (HTTP %s)',
+    'ann-fail2': '⚠ Annotation load failed',
+    'ann-del-fail': '⚠ Delete failed (HTTP %s)',
+    'ann-del-fail2': '⚠ Delete failed',
+    'spec-unverified': '⚠ unverified - not grounded in CV/transcript',
+    'del-confirm': 'Delete "%s"? This cannot be undone.',
+    'del-prompt': 'Admin passphrase (first delete only):',
+    'del-bad': 'Wrong passphrase, or delete is disabled',
+    'del-fail': 'Delete failed: ',
+  },
+};
+let lang = localStorage.getItem('lynxact_lang') || 'zh';
+function t(k){ return (I18N[lang] || I18N.en)[k] ?? k; }
+function t1(k, v){ return t(k).replace('%s', v); }
+function applyI18n(){
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPh);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  document.getElementById('langBtn').textContent = lang === 'zh' ? 'EN' : '中';
+}
+document.getElementById('langBtn').addEventListener('click', () => {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lynxact_lang', lang);
+  applyI18n();
+});
+
 const clipId = {{ clip.id | tojson }};
 const clipTitle = {{ clip.title | tojson }};
 const urlMode = new URLSearchParams(location.search).get('mode');
@@ -318,7 +487,7 @@ let clipOffset = 0;
 let es = null;
 function fmt(t){ return t.toFixed(1) + 's'; }
 function setDoneState(){
-  statusEl.textContent = 'done';
+  statusEl.textContent = t('done');
   statusEl.dataset.state = 'done';
   es.close(); es = null;
   for (const id of ['reportBtn','exportBtn']) {
@@ -329,7 +498,7 @@ function setDoneState(){
 function start(){
   if (es) return;
   es = new EventSource('/api/stream/' + clipId + (urlMode ? '?mode=' + urlMode : ''));
-  statusEl.textContent = urlMode === 'live' ? 'LIVE streaming (model-generated)…' : 'streaming…';
+  statusEl.textContent = urlMode === 'live' ? t('live-streaming') : t('streaming');
   statusEl.dataset.state = 'live';
   es.addEventListener('transcript', e => {
     const d = JSON.parse(e.data);
@@ -353,7 +522,7 @@ function start(){
       '<span class="rating">★ ' + esc(d.rating) + '</span></div>' +
       '<div class="an"></div>' +
       (Array.isArray(d.players) && d.players.length ? '<div class="players">' + esc(d.players.join(' / ')) + '</div>' : '') +
-      (d.speculative ? '<div class="spec">⚠ unverified - not grounded in CV/transcript</div>' : '');
+      (d.speculative ? '<div class="spec">' + t('spec-unverified') + '</div>' : '');
     div.querySelector('.title').textContent = d.title;
     div.querySelector('.an').textContent = d.analysis;
     cardsEl.appendChild(div);
@@ -361,13 +530,13 @@ function start(){
   });
   es.addEventListener('done', setDoneState);
   es.addEventListener('error', e => {
-    let msg = 'stream error';
+    let msg = t('stream-err');
     try { msg = JSON.parse(e.data).msg || msg; } catch(_) {}
     statusEl.textContent = '⚠ ' + msg;
     statusEl.dataset.state = 'err';
   });
   es.onerror = () => {
-    statusEl.textContent = '⚠ stream closed - press play to retry';
+    statusEl.textContent = t('stream-closed');
     statusEl.dataset.state = 'err';
     if (es) { es.close(); es = null; }
   };
@@ -408,7 +577,7 @@ const offsetIn = document.getElementById('offsetIn');
 })();
 document.getElementById('offsetSave').addEventListener('click', async () => {
   const v = parseFloat(offsetIn.value);
-  if (!isFinite(v)) { statusEl.textContent = '⚠ offset must be a number'; statusEl.dataset.state = 'err'; return; }
+  if (!isFinite(v)) { statusEl.textContent = t('offset-nan'); statusEl.dataset.state = 'err'; return; }
   try {
     const r = await fetch('/api/clips/' + clipId + '/offset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({offset: v})});
     const d = await r.json();
@@ -416,12 +585,12 @@ document.getElementById('offsetSave').addEventListener('click', async () => {
     clipOffset = d.offset;
     offsetIn.value = clipOffset;
     syncAll();
-    statusEl.textContent = '✅ offset ' + clipOffset + 's saved';
-  } catch (e) { statusEl.textContent = '⚠ offset save failed: ' + e.message; statusEl.dataset.state = 'err'; }
+    statusEl.textContent = t1('offset-saved', clipOffset);
+  } catch (e) { statusEl.textContent = t('offset-fail') + e.message; statusEl.dataset.state = 'err'; }
 });
 document.getElementById('vid').addEventListener('play', start);
 document.getElementById('vid').addEventListener('error', () => {
-  statusEl.textContent = '⚠ video failed to load - check clip file';
+  statusEl.textContent = t('video-fail');
   statusEl.dataset.state = 'err';
 });
 // ---- AI Coach 对话面板(多轮 + 工具调用) ----
@@ -442,7 +611,7 @@ async function coachSend(){
   if (!msg) return;
   coachInput.value = '';
   bubble('user', esc(msg));
-  const busy = bubble('assistant', '<span style="color:var(--faint)">教练思考中…</span>');
+  const busy = bubble('assistant', '<span style="color:var(--faint)">' + t('coach-thinking') + '</span>');
   try {
     const r = await fetch('/api/agent/chat', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({clip_id: clipId, message: msg, history: coachHistory})});
@@ -451,12 +620,12 @@ async function coachSend(){
     let traceHtml = '';
     if (d.tool_trace && d.tool_trace.length) {
       traceHtml = '<div class="trace">' +
-        d.tool_trace.map(t => '· ' + esc(t.tool) + ' → ' + esc(t.summary)).join('<br>') + '</div>';
+        d.tool_trace.map(tc => '· ' + esc(tc.tool) + ' → ' + esc(tc.summary)).join('<br>') + '</div>';
     }
     busy.innerHTML = esc(d.reply).replace(/\n/g, '<br>') + traceHtml;
     coachHistory.push({role:'user', content: msg}, {role:'assistant', content: d.reply});
   } catch (err) {
-    busy.innerHTML = '⚠ 请求失败: ' + esc(err.message);
+    busy.innerHTML = '⚠ ' + t('req-fail') + esc(err.message);
   }
 }
 document.getElementById('coachSend').addEventListener('click', coachSend);
@@ -475,16 +644,16 @@ document.getElementById('reportBtn').addEventListener('click', async () => {
   const pane = document.getElementById('reportPane');
   pane.style.display = 'flex';
   const body = document.getElementById('reportBody');
-  body.textContent = 'generating…';
+  body.textContent = t('generating');
   try {
     const r = await fetch('/api/report/' + clipId + (urlMode ? '?mode=' + urlMode : ''));
     const d = await r.json();
-    if (!r.ok || d.error) { body.textContent = '⚠ ' + (d.error || ('report failed: HTTP ' + r.status)); return; }
-    document.getElementById('reportBy').textContent = 'by ' + d.generated_by;
+    if (!r.ok || d.error) { body.textContent = t('report-fail') + (d.error || ('HTTP ' + r.status)); return; }
+    document.getElementById('reportBy').textContent = t1('report-by', d.generated_by);
     body.innerHTML = mdToHtml(d.markdown);
     pane.scrollIntoView({behavior:'smooth'});
   } catch (err) {
-    body.textContent = '⚠ report request failed: ' + err.message;
+    body.textContent = t('report-fail') + err.message;
   }
 });
 // ---- Export top moments as a shareable PNG (client-side canvas, no deps) ----
@@ -503,13 +672,13 @@ function wrapText(ctx, text, x, y, maxW, lineH, maxLines){
   return y + lineH;
 }
 document.getElementById('exportBtn').addEventListener('click', () => {
-  if (!cardsData.length) { statusEl.textContent = '⚠ no cards to export'; statusEl.dataset.state = 'err'; return; }
+  if (!cardsData.length) { statusEl.textContent = t('no-cards'); statusEl.dataset.state = 'err'; return; }
   const top = [...cardsData].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3);
   const W = 1200, cardH = 150, H = 300 + top.length * cardH + 90;
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
-  if (!ctx) { statusEl.textContent = '⚠ canvas 2D unsupported'; statusEl.dataset.state = 'err'; return; }
+  if (!ctx) { statusEl.textContent = t('canvas-unsup'); statusEl.dataset.state = 'err'; return; }
   ctx.fillStyle = '#0a0e14'; ctx.fillRect(0, 0, W, H);
   ctx.strokeStyle = '#222c3b'; ctx.strokeRect(20, 20, W - 40, H - 40);
   // header
@@ -518,9 +687,9 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   ctx.fillStyle = '#3ee07f'; ctx.fillText('Act', 60 + ctx.measureText('Lynx').width, 90);
   ctx.fillStyle = '#e9eff7'; ctx.fillText(' Coach', 60 + ctx.measureText('LynxAct').width, 90);
   ctx.fillStyle = '#93a6bc'; ctx.font = '26px sans-serif';
-  ctx.fillText(clipTitle + ' - Top Tactical Moments', 60, 140);
+  ctx.fillText(clipTitle + ' - ' + t('top-moments'), 60, 140);
   ctx.fillStyle = '#ffd166'; ctx.font = '22px sans-serif';
-  ctx.fillText(urlMode === 'live' ? 'LIVE model-generated analysis' : 'tactical event analysis', 60, 178);
+  ctx.fillText(urlMode === 'live' ? t('live-analysis') : t('tactical-analysis'), 60, 178);
   // cards
   let y = 230;
   for (const c of top) {
@@ -540,15 +709,15 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     y += cardH;
   }
   ctx.fillStyle = '#93a6bc'; ctx.font = '20px sans-serif';
-  ctx.fillText('Generated by LynxAct Coach · commentary, CV-fusion and LLM event cards', 60, H - 45);
+  ctx.fillText(t('png-footer'), 60, H - 45);
   cv.toBlob(blob => {
-    if (!blob) { statusEl.textContent = '⚠ export failed'; statusEl.dataset.state = 'err'; return; }
+    if (!blob) { statusEl.textContent = t('export-fail'); statusEl.dataset.state = 'err'; return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = clipId + '-top-moments.png';
     a.click();
     URL.revokeObjectURL(a.href);
-    statusEl.textContent = 'PNG exported';
+    statusEl.textContent = t('png-done');
   }, 'image/png');
 });
 // ---- Telestration 战术画板(暂停视频→画箭头/自由线/矩形→笔画锚定当前时间) ----
@@ -613,11 +782,11 @@ vid.addEventListener('pause', paint);
 async function loadAnns(){
   try {
     const r = await fetch('/api/annotations/' + clipId);
-    if (!r.ok){ TELO.anns = []; renderList(); statusEl.textContent = '⚠ 标注加载失败 (HTTP ' + r.status + ')'; statusEl.dataset.state = 'err'; return; }
+    if (!r.ok){ TELO.anns = []; renderList(); statusEl.textContent = t1('ann-fail', r.status); statusEl.dataset.state = 'err'; return; }
     const d = await r.json();
     TELO.anns = Array.isArray(d.items) ? d.items : [];
     renderList();
-  } catch(_) { TELO.anns = []; statusEl.textContent = '⚠ 标注加载失败'; statusEl.dataset.state = 'err'; }
+  } catch(_) { TELO.anns = []; statusEl.textContent = t('ann-fail2'); statusEl.dataset.state = 'err'; }
 }
 function renderList(){
   annotList.innerHTML = '';
@@ -631,8 +800,8 @@ function renderList(){
       try {
         const r = await fetch('/api/annotations/' + clipId + '/' + a.uid, {method:'DELETE'});
         if (r.ok){ TELO.anns = TELO.anns.filter(x => x.uid !== a.uid); renderList(); paint(); }
-        else { document.getElementById('teloStatus').textContent = '⚠ 删除失败 (HTTP ' + r.status + ')'; }
-      } catch(_) { document.getElementById('teloStatus').textContent = '⚠ 删除失败'; }
+        else { document.getElementById('teloStatus').textContent = t1('ann-del-fail', r.status); }
+      } catch(_) { document.getElementById('teloStatus').textContent = t('ann-del-fail2'); }
     });
     row.appendChild(ts); row.appendChild(tag); row.appendChild(del);
     annotList.appendChild(row);
@@ -645,7 +814,7 @@ function setTeloOn(on){
   vid.controls = !on;   // 画板模式:画面全给画笔,空格=播放/暂停,点击=画
   const btn = document.getElementById('teloBtn');
   btn.classList.toggle('on', on);
-  document.getElementById('teloStatus').textContent = on ? '暂停视频直接画,空格播放/暂停,Esc 退出画板' : '';
+  document.getElementById('teloStatus').textContent = on ? t('telo-help') : '';
   paint();
 }
 document.getElementById('teloBtn').addEventListener('click', () => setTeloOn(!TELO.on));
@@ -682,24 +851,24 @@ function endDraft(){
     body: JSON.stringify({t: draft.t, tool: draft.tool, color: draft.color, points: draft.points})})
     .then(r => r.json())
     .then(d => {
-      if (d.uid){ TELO.anns.push(d); TELO.lastUid = d.uid; renderList(); document.getElementById('teloStatus').textContent = '已保存 ✓'; }
-      else { document.getElementById('teloStatus').textContent = '⚠ 保存失败: ' + (d.error || ''); }
+      if (d.uid){ TELO.anns.push(d); TELO.lastUid = d.uid; renderList(); document.getElementById('teloStatus').textContent = t('saved'); }
+      else { document.getElementById('teloStatus').textContent = t('save-fail') + (d.error || ''); }
     })
-    .catch(err => { document.getElementById('teloStatus').textContent = '⚠ 保存失败: ' + err.message; })
+    .catch(err => { document.getElementById('teloStatus').textContent = t('save-fail') + err.message; })
     .finally(paint);
 }
 teloCv.addEventListener('pointerup', endDraft);
 teloCv.addEventListener('pointercancel', () => { TELO.draft = null; paint(); });
 document.getElementById('teloUndo').addEventListener('click', async () => {
-  if (!TELO.lastUid){ document.getElementById('teloStatus').textContent = '没有可撤销的笔画'; return; }
+  if (!TELO.lastUid){ document.getElementById('teloStatus').textContent = t('nothing-undo'); return; }
   try {
     const r = await fetch('/api/annotations/' + clipId + '/' + TELO.lastUid, {method:'DELETE'});
     if (r.ok){ TELO.anns = TELO.anns.filter(x => x.uid !== TELO.lastUid); TELO.lastUid = null; renderList(); paint(); }
-    else { document.getElementById('teloStatus').textContent = '⚠ 撤销失败 (HTTP ' + r.status + ')'; }
-  } catch(_) { document.getElementById('teloStatus').textContent = '⚠ 撤销失败'; }
+    else { document.getElementById('teloStatus').textContent = t1('undo-fail', r.status); }
+  } catch(_) { document.getElementById('teloStatus').textContent = t('undo-fail2'); }
 });
 document.getElementById('frameExport').addEventListener('click', () => {
-  if (!TELO.on){ document.getElementById('teloStatus').textContent = '先点 Telestration 进入画板模式'; return; }
+  if (!TELO.on){ document.getElementById('teloStatus').textContent = t('telo-first'); return; }
   const {w,h} = vrect();
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const ctx = cv.getContext('2d');
@@ -707,12 +876,12 @@ document.getElementById('frameExport').addEventListener('click', () => {
   const now = vid.currentTime || 0;
   for (const a of TELO.anns) if (Math.abs(a.t - now) <= TELO.win) drawStroke(ctx, a, 1);
   cv.toBlob(blob => {
-    if (!blob){ document.getElementById('teloStatus').textContent = '⚠ export failed'; return; }
+    if (!blob){ document.getElementById('teloStatus').textContent = t('export-fail'); return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = clipId + '-t' + now.toFixed(1) + '-telestration.png';
     a.click(); URL.revokeObjectURL(a.href);
-    document.getElementById('teloStatus').textContent = 'frame PNG exported';
+    document.getElementById('teloStatus').textContent = t('frame-done');
   }, 'image/png');
 });
 loadAnns();
@@ -721,21 +890,23 @@ loadAnns();
 function deleteClipBtn(btn, id, title, redirectTo){
   btn.addEventListener('click', async () => {
     const KEY = 'lynxact_admin_token';
-    if (!confirm('删除「' + title + '」?此操作不可撤销。')) return;
+    if (!confirm(t1('del-confirm', title))) return;
     let token = sessionStorage.getItem(KEY);
-    if (!token){ token = prompt('管理员口令(第一次删除时输入):'); if (!token) return; }
+    if (!token){ token = prompt(t('del-prompt')); if (!token) return; }
     try {
       const r = await fetch('/api/clips/' + encodeURIComponent(id),
         {method:'DELETE', headers:{'X-Admin-Token': token}});
-      if (r.status === 403){ sessionStorage.removeItem(KEY); alert('口令错误,或删除功能未开启'); return; }
+      if (r.status === 403){ sessionStorage.removeItem(KEY); alert(t('del-bad')); return; }
       const d = await r.json();
-      if (!r.ok){ alert('删除失败: ' + (d.error || r.status)); return; }
+      if (!r.ok){ alert(t('del-fail') + (d.error || r.status)); return; }
       sessionStorage.setItem(KEY, token);
       location.href = redirectTo;
-    } catch(err){ alert('删除失败: ' + err.message); }
+    } catch(err){ alert(t('del-fail') + err.message); }
   });
 }
 deleteClipBtn(document.getElementById('delBtn'), clipId, clipTitle, '/');
+applyI18n();
+statusEl.textContent = t('idle');
 </script>
 </body>
 </html>
